@@ -1,0 +1,113 @@
+{
+  "data": [
+    {
+      "id": 1,
+      "product_name": "Baignoire ALFA blanc 145x145 cm",
+      "category": [
+       {
+        "section": "2",
+        "parent": "1",
+        "child": "1"
+       }
+      ],
+      "stock": 1,
+      "sku": 19472,
+      "price": "1 125,000 DT",
+      "qty": 665,
+      "status": 3,
+      "image": "product-1.png",
+      "product_brand": "SANINDUSA"
+    },
+    {
+      "id": 2,
+      "product_name": "HOTTE F15A 60 XVSAT 600 RLN",
+      "category": [
+       {
+        "section": "1",
+        "parent": "2",
+        "child": "1"
+       }
+      ],
+      "stock": 1,
+      "sku": "CCF156525",
+      "price": "739,000 DT",
+      "qty": 665,
+      "status": 2,
+      "image": "product-1.png",
+      "product_brand": "Airforce"
+    },
+    {
+      "id": 3,
+      "product_name": "MIROIR LUXE GROSSISSANT DOUBLE FACE CHROME",
+      "category": [
+       {
+        "section": "2",
+        "parent": "1",
+        "child": "2"
+       }
+      ],
+      "stock": 1,
+      "sku": "4154511",
+      "price": "204,999 DT",
+      "qty": 665,
+      "status": 1,
+      "image": "product-1.png",
+      "product_brand": "SANINDUSA"
+    },
+    {
+      "id": 4,
+      "product_name": "Chaise avec accoudoirs en aluminium NOYA Teak/ Blanc",
+      "category": [
+       {
+        "section": "3",
+        "parent": "1",
+        "child": "1"
+       }
+      ],
+      "stock": 0,
+      "sku": "4154511",
+      "price": "204,999 DT",
+      "qty": 665,
+      "status": 1,
+      "image": "product-1.png",
+      "product_brand": "JIAXING LAYO"
+    },
+    {
+      "id": 5,
+      "product_name": "Chaise longue en aluminium ELSA Antracite",
+      "category": [
+       {
+        "section": "3",
+        "parent": "1",
+        "child": "2"
+       }
+      ],
+      "stock": 0,
+      "sku": "L17002",
+      "price": "608,000 DT",
+      "qty": 665,
+      "status": 1,
+      "image": "product-1.png",
+      "product_brand": "JIAXING LAYO"
+    },
+    {
+      "id": 6,
+      "product_name": "Table extensible en aluminium ELEN Blanc 160-240 cm",
+      "category": [
+       {
+        "section": "3",
+        "parent": "1",
+        "child": "2"
+       }
+      ],
+      "stock": 0,
+      "sku": "L17002",
+      "price": "2 872,000 DT",
+      "qty": 665,
+      "status": 1,
+      "image": "product-1.png",
+      "product_brand": "JIAXING LAYO"
+    }
+
+  ]
+}

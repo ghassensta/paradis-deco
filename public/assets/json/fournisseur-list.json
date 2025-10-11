@@ -1,0 +1,84 @@
+{
+    "data": [
+      {
+        "id":0,
+        "company":"SANINDUSA",
+        "adresse":"Adresse 123, adresse de société 123",
+        "interlocution": [
+          {
+            "id":0,
+            "name":"Jon Doe",
+            "mail":"jon@doe.com",
+            "tel":"+012345678"
+          },
+          {
+            "id":1,
+            "name":"Jon Doe",
+            "mail":"jon@doe.com",
+            "tel":"+012345678"
+          }
+  
+        ],
+        "tel":"+012345678",
+        "mail":"sanindusa@mail.com"
+      },
+      {
+        "id":1,
+        "company":"Airforce",
+        "adresse":"Adresse 123, adresse de société 123",
+        "interlocution": [
+          {
+            "id":0,
+            "name":"Jon Doe",
+            "mail":"jon@doe.com",
+            "tel":"+012345678"
+          },
+          {
+            "id":1,
+            "name":"Jon Doe",
+            "mail":"jon@doe.com",
+            "tel":"+012345678"
+          },
+          {
+            "id":2,
+            "name":"Jon Doe",
+            "mail":"jon@doe.com",
+            "tel":"+012345678"
+          }
+  
+        ],
+        "tel":"+012345678",
+        "mail":"airforce@mail.com"
+      },
+      
+      {
+        "id":2,
+        "company":"JIAXING LAYO",
+        "adresse":"Adresse 123, adresse de société 123",
+        "interlocution": [
+          {
+            "id":0,
+            "name":"Jon Doe",
+            "mail":"jon@doe.com",
+            "tel":"+012345678"
+          },
+          {
+            "id":1,
+            "name":"Jon Doe",
+            "mail":"jon@doe.com",
+            "tel":"+012345678"
+          },
+          {
+            "id":2,
+            "name":"Jon Doe",
+            "mail":"jon@doe.com",
+            "tel":"+012345678"
+          }
+  
+        ],
+        "tel":"+012345678",
+        "mail":"jiawinglayo@mail.com"
+      }
+
+    ]
+  }

@@ -1,0 +1,22 @@
+{
+  "data": [
+    {
+      "id": 1,
+      "customer": "Stanfield Baser",
+      "customer_id": 879861,
+      "responsable": "Stanfield Baser",
+      "email": "sbaser0@boston.com",
+      "tel": "1-(202) 123-4567",
+      "matricule": "123456789"
+    },
+    {
+      "id": 2,
+      "customer": "Bartolomeo Gummow",
+      "customer_id": 879862,
+      "responsable": "Stanfield Baser",
+      "email": "sbaser0@boston.com",
+      "tel": "1-(202) 123-4567",
+      "matricule": "123456789"
+    }
+  ]
+}

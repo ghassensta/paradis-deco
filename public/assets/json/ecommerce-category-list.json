@@ -1,0 +1,74 @@
+{
+  "data": [
+    {
+      "id": 1,
+      "cat_image": "baignoire.jpg",
+      "categories": "Baignoire Angle",
+      "category_detail": "La baignoire est un élément essentiel de toute salle de bain.",
+      "total_earnings": "$99129",
+      "category_parent": "Baignoire",
+      "category_section": "Salle de bain",
+      "total_products": 1947
+    },
+    {
+      "id": 2,
+      "cat_image": "cuisine.jpg",
+      "categories": "Cuisine",
+      "category_detail": "",
+      "total_earnings": "$99129",
+      "category_parent": "Cuisine",
+      "category_section": "Cuisine",
+      "total_products": 1947
+    },
+    {
+      "id": 3,
+      "cat_image": "hotte-aspirant.jpg",
+      "categories": "Hotte Murale",
+      "category_detail": "",
+      "total_earnings": "$99129",
+      "category_parent": "Hotte Aspirant",
+      "category_section": "Cuisine",
+      "total_products": 1947
+    },
+    {
+      "id": 4,
+      "cat_image": "accessoire-baignoire.jpg",
+      "categories": "Accessoire Baignoire",
+      "category_detail": "",
+      "total_earnings": "$99129",
+      "category_parent": "Baignoire",
+      "category_section": "Salle de bain",
+      "total_products": 1947
+    },
+    {
+      "id": 5,
+      "cat_image": "chaise.jpg",
+      "categories": "Chaise",
+      "category_detail": "",
+      "total_earnings": "$99129",
+      "category_parent": "Meuble en alminium",
+      "category_section": "Terrasse & Jardin", 
+      "total_products": 1947
+    },
+    {
+      "id": 6,
+      "cat_image": "chaise-long.jpg",
+      "categories": "Chaise Long",
+      "category_detail": "",
+      "total_earnings": "$99129",
+      "category_parent": "Meuble en alminium",
+      "category_section": "Terrasse & Jardin", 
+      "total_products": 1947
+    },
+    {
+      "id": 7,
+      "cat_image": "table.jpg",
+      "categories": "Table",
+      "category_detail": "",
+      "total_earnings": "$99129",
+      "category_parent": "Meuble en alminium",
+      "category_section": "Terrasse & Jardin", 
+      "total_products": 1947
+    }
+  ]
+}
