@@ -45,7 +45,7 @@
                 <nav class="flex" aria-label="Breadcrumb">
                     <ol class="inline-flex items-center space-x-1 md:space-x-2">
                         <li class="inline-flex items-center">
-                            <a href="{{ route('home') }}" class="inline-flex items-center text-xs sm:text-sm font-medium text-gray-600 hover:text-primary transition-colors">
+                            <a href="/" class="inline-flex items-center text-xs sm:text-sm font-medium text-gray-600 hover:text-primary transition-colors">
                                 <svg class="w-4 h-4 mr-2" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg">
                                     <path d="M10.707 2.293a1 1 0 00-1.414 0l-7 7a1 1 0 001.414 1.414L4 10.414V17a1 1 0 001 1h2a1 1 0 001-1v-2a1 1 0 011-1h2a1 1 0 011 1v2a1 1 0 001 1h2a1 1 0 001-1v-6.586l.293.293a1 1 0 001.414-1.414l-7-7z"></path>
                                 </svg>
@@ -186,7 +186,7 @@
                             <!-- Image Section - Style amélioré -->
                             <div class="relative overflow-hidden aspect-square">
                                 <a href="{{ route('preview-article', $product->slug) }}" class="block h-full">
-                                    <img src="{{ asset('storage/' . $product->images[0]) }}" alt="{{ $product->name }}"
+                                    <img src="{{ asset('storage/' . $product->image_avant ?? $product->images[0]) }}" alt="{{ $product->name }} | {{ $config->site_name }}"
                                         class="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
                                         loading="lazy" itemprop="image" />
                                 </a>

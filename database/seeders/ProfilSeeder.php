@@ -462,91 +462,61 @@ class ProfilSeeder extends Seeder
                 'name' => 'Amina Ben Salah',
                 'email' => 'amina.bensalah@example.com',
                 'phone' => '+21620123456',
-                'city' => 'Tunis',
-                'state' => 'Tunis',
-                'postal_code' => '1000',
-                'country' => 'Tunisia',
+                'adresse'=>'sousse'
             ],
             [
                 'name' => 'Mohamed Trabelsi',
                 'email' => 'mohamed.trabelsi@example.com',
                 'phone' => '+21621456789',
-                'city' => 'Sousse',
-                'state' => 'Sousse',
-                'postal_code' => '4000',
-                'country' => 'Tunisia',
+                'adresse'=>'sousse'
             ],
             [
                 'name' => 'Leila Hammami',
                 'email' => 'leila.hammami@example.com',
                 'phone' => '+21622987654',
-                'city' => 'Sfax',
-                'state' => 'Sfax',
-                'postal_code' => '3000',
-                'country' => 'Tunisia',
+                'adresse'=>'sousse'
             ],
             [
                 'name' => 'Ahmed Zarrouk',
                 'email' => 'ahmed.zarrouk@example.com',
                 'phone' => '+21620876543',
-                'city' => 'Monastir',
-                'state' => 'Monastir',
-                'postal_code' => '5000',
-                'country' => 'Tunisia',
+                'adresse'=>'sousse'
             ],
             [
                 'name' => 'Sonia Chebil',
                 'email' => 'sonia.chebil@example.com',
                 'phone' => '+21620765432',
-                'city' => 'Kairouan',
-                'state' => 'Kairouan',
-                'postal_code' => '3100',
-                'country' => 'Tunisia',
+                'adresse'=>'sousse'
             ],
             [
                 'name' => 'Walid Brahim',
                 'email' => 'walid.brahim@example.com',
                 'phone' => '+21621654321',
-                'city' => 'Bizerte',
-                'state' => 'Bizerte',
-                'postal_code' => '7000',
-                'country' => 'Tunisia',
+                'adresse'=>'sousse'
             ],
             [
                 'name' => 'Farah Jaziri',
                 'email' => 'farah.jaziri@example.com',
                 'phone' => '+21620543210',
-                'city' => 'Gabès',
-                'state' => 'Gabès',
-                'postal_code' => '6000',
-                'country' => 'Tunisia',
+                'adresse'=>'sousse'
             ],
             [
                 'name' => 'Tarek Ben Abdallah',
                 'email' => 'tarek.abdallah@example.com',
                 'phone' => '+21620321098',
-                'city' => 'Nabeul',
-                'state' => 'Nabeul',
-                'postal_code' => '8000',
-                'country' => 'Tunisia',
+                'adresse'=>'sousse'
             ],
             [
                 'name' => 'Yasmine Fakhfakh',
                 'email' => 'yasmine.fakhfakh@example.com',
                 'phone' => '+21620210987',
-                'city' => 'Kef',
-                'state' => 'Kef',
-                'postal_code' => '7100',
-                'country' => 'Tunisia',
+                'adresse'=>'sousse'
             ],
             [
                 'name' => 'Hatem Khlifi',
                 'email' => 'hatem.khlifi@example.com',
                 'phone' => '+21620109876',
-                'city' => 'Tozeur',
-                'state' => 'Tozeur',
-                'postal_code' => '2200',
-                'country' => 'Tunisia',
+                'adresse'=>'sousse'
             ],
         ];
 

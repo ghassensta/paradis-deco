@@ -14,7 +14,32 @@
                         @method('PUT')
                     @endif
 
-                    <!-- Upload des images -->
+                    <!-- Cover Image Upload -->
+                    <div class="mb-4">
+                        <label class="form-label fw-bold" for="image_avant">
+                            Image Avant
+                            <span class="fw-normal">(image avant de produit)</span>
+                            <span class="text-danger">*</span>
+                        </label>
+                        <div class="input-group">
+                            <input type="file" name="image_avant" id="image_avant" class="form-control"
+                                accept="image/*" {{ isset($product) ? '' : 'required' }}>
+                            <div class="invalid-feedback">Veuillez sélectionner une image de couverture.</div>
+                        </div>
+                        @if (isset($product) && $product->image_avant)
+                            <div class="mt-2">
+                                <img src="{{ asset('storage/' . $product->image_avant) }}" alt="Cover Image"
+                                    style="max-width: 150px; height: auto;">
+                                <input type="hidden" name="old_image_avant"
+                                    value="{{ $product->image_avant }}">
+                            </div>
+                        @endif
+                        @error('image_avant')
+                            <div class="text-danger">{{ $message }}</div>
+                        @enderror
+                    </div>
+
+                    <!-- Upload des images multiples (Dropzone) -->
                     <div class="mb-4">
                         <label class="form-label fw-bold">
                             Images du produit
@@ -77,9 +102,6 @@
                                 <div class="text-danger">{{ $message }}</div>
                             @enderror
                         </div>
-
-
-
                     </div>
 
                     <div class="row">
@@ -201,6 +223,7 @@
             const form = document.getElementById('productForm');
             const hiddenOldInput = document.getElementById('file-input-covert-old');
             const hiddenFileInput = document.getElementById('file-input-covert');
+            const coverImageInput = document.getElementById('image_avant');
 
             /* Convertit un tableau de File en FileList */
             const toFileList = (files) => {
@@ -213,7 +236,6 @@
              *  Initialisation Dropzone
              * ----------------------------------------------------------------- */
             if (dropzoneElement) {
-
                 /** images existantes (édit) : array de noms */
                 let existing = @json(isset($product) ? $product->images ?? [] : []);
 
@@ -230,28 +252,25 @@
                     addRemoveLinks: true,
                     parallelUploads: 10,
                     previewTemplate: `
-                <div class="dz-preview dz-file-preview">
-                    <div class="dz-details">
-                        <div class="dz-thumbnail">
-                            <img data-dz-thumbnail />
-                            <span class="dz-nopreview">No preview</span>
-                            <div class="dz-success-mark"></div>
-                            <div class="dz-error-mark"></div>
-                            <div class="dz-error-message"><span data-dz-errormessage></span></div>
-                            <div class="progress">
-                                <div class="progress-bar progress-bar-primary" role="progressbar"
-                                     aria-valuemin="0" aria-valuemax="100" data-dz-uploadprogress></div>
+                        <div class="dz-preview dz-file-preview">
+                            <div class="dz-details">
+                                <div class="dz-thumbnail">
+                                    <img data-dz-thumbnail />
+                                    <span class="dz-nopreview">No preview</span>
+                                    <div class="dz-success-mark"></div>
+                                    <div class="dz-error-mark"></div>
+                                    <div class="dz-error-message"><span data-dz-errormessage></span></div>
+                                    <div class="progress">
+                                        <div class="progress-bar progress-bar-primary" role="progressbar"
+                                             aria-valuemin="0" aria-valuemax="100" data-dz-uploadprogress></div>
+                                    </div>
+                                </div>
+                                <div class="dz-filename" data-dz-name></div>
+                                <div class="dz-size" data-dz-size></div>
                             </div>
-                        </div>
-                        <div class="dz-filename" data-dz-name></div>
-                        <div class="dz-size"     data-dz-size></div>
-                    </div>
-                </div>`,
-
+                        </div>`,
                     dictRemoveFile: 'Supprimer',
-
                     init() {
-
                         /* ---- 1. Injecter les images existantes ---------------- */
                         existing.forEach(name => {
                             const mock = {
@@ -288,9 +307,10 @@
                     }
                 });
             }
-        })();
 
-        $(function() {
+            /* -----------------------------------------------------------------
+             *  Validation du formulaire
+             * ----------------------------------------------------------------- */
             // Initialise tous les selects .select2
             $('.select2').select2({
                 placeholder: function() {
@@ -301,7 +321,7 @@
             });
 
             // Validation à la soumission
-            $('#product-form').on('submit', function(e) {
+            $('#productForm').on('submit', function(e) {
                 let $select = $('#category_ids');
                 let values = $select.val() || [];
                 if (values.length < 2) {
@@ -317,6 +337,6 @@
                     $(this).removeClass('is-invalid');
                 }
             });
-        });
+        })();
     </script>
 @endsection

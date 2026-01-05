@@ -21,7 +21,6 @@ use App\Http\Controllers\Auth\ResetPasswordController;
 
 
 Route::get('/', [AccueilController::class, 'nouveautes'])->name('welcome')->middleware('throttle:60,1');
-Route::get('/sitemap.xml', [\App\Http\Controllers\SitemapController::class, 'index']);
 
 Route::get('/article/{slug}', action: [AccueilController::class, 'ProduitShow'])->name('preview-article');
 Route::get('/inspiration/{slug}', action: [AccueilController::class, 'InspirationShow'])->name('preview-inspiration');
@@ -29,6 +28,8 @@ Route::resource('/checkout', CheckoutController::class);
 Route::post('/order/submit', [CheckoutController::class, 'storeOrder'])
     ->name('order.submit');
 Route::get('/toutes/produits', [AccueilController::class, 'AllProduits'])->name('allproduits');
+
+Route::get('/toutes/inspirations', [AccueilController::class, 'AllInspirations'])->name('allinspirations');
 Route::get('/cat', function () {
     return view('products.cat');
 });
@@ -39,6 +40,7 @@ Route::get('/show', function () {
 Route::get('/inspiration', function () {
     return view('products.inspiration');
 });
+
 Route::get('/a-propos', [AboutController::class, 'index'])
     ->name('about');
 
@@ -118,6 +120,9 @@ Route::prefix('admin/paradis-deco')->group(function () {
 
         Route::get('/commandes/{id}/edit-status', [OrderController::class, 'editStatus'])->name('commandes.edit-status');
         Route::put('/commandes/{id}/status', [OrderController::class, 'updateStatus'])->name('commandes.update-status');
-        Route::get('/commandes/{id}/pdf', [PdfController::class, 'generatePDF'])->name('commandes.pdf');
+        Route::get('/commandes/{id}/pdf', [PdfController::class, 'generatePDF'])
+            ->where('id', '[0-9]+')
+            ->name('commandes.pdf');
+
     });
 });

@@ -14,6 +14,7 @@ return new class extends Migration {
             $table->id();
             // Contenu principal
             $table->json('category_ids')->nullable(); // Changed from image_url
+            $table->string('image_avant')->nullable();
             $table->json('images')->nullable();              // galerie d’images JSON
             $table->string('name');                          // nom du produit
             $table->string('slug')->unique();                // slug SEO

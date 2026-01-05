@@ -6,6 +6,7 @@ use App\Models\Inspiration;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
 use Illuminate\Support\Facades\Storage;
+use Intervention\Image\Laravel\Facades\Image;
 
 class InspirationsController extends Controller
 {
@@ -31,14 +32,13 @@ class InspirationsController extends Controller
      */
     public function store(Request $request)
     {
-        //dd($request->all());
         $request->validate([
             'title' => 'required|string|max:255',
             'resume' => 'nullable|string',
             'description' => 'nullable|string',
             'meta_title' => 'nullable|string|max:70',
             'meta_description' => 'nullable|string|max:160',
-            'image' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:204',
+            'image' => 'nullable|image|',
             'is_active' => 'boolean',
         ]);
 
@@ -54,10 +54,18 @@ class InspirationsController extends Controller
             $data['slug'] = $baseSlug . '-' . $counter++;
         }
 
-        $image = $request->file('image');
-        $imageName = time() . '_' . $image->getClientOriginalName(); // Génère un nom unique avec la date
-        $image->move(public_path('storage/inspirations'), $imageName); // Déplace directement dans public/categories
-        $data['image'] = 'inspirations/' . $imageName; // Stocke le chemin relatif dans $data
+        // Gestion de l'image
+        if ($request->hasFile('image') && $request->file('image')->isValid()) {
+            $filename = Str::slug($data['title']) . '-' . time() . '.webp';
+            $path = 'inspirations/' . $filename;
+
+            // Convertir en WebP avec Intervention Image
+            $image = Image::read($request->file('image'))->toWebp(80);
+            Storage::disk('public')->put($path, (string) $image);
+
+            // Stocke le chemin relatif
+            $data['image'] = $path;
+        }
 
         Inspiration::create($data);
 
@@ -84,7 +92,7 @@ class InspirationsController extends Controller
             'description' => 'nullable|string',
             'meta_title' => 'nullable|string|max:70',
             'meta_description' => 'nullable|string|max:160',
-            'image' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048',
+            'image' => 'nullable|image|',
             'is_active' => 'boolean',
         ]);
 
@@ -94,16 +102,29 @@ class InspirationsController extends Controller
         // Générer le slug si non fourni
         $data['slug'] = $data['slug'] ?? Str::slug($data['title']);
 
-        $image = $request->file('image');
+        // Vérifier l'unicité du slug (sauf pour l'inspiration actuelle)
+        $baseSlug = $data['slug'];
+        $counter = 1;
+        while (Inspiration::where('slug', $data['slug'])->where('id', '!=', $id)->exists()) {
+            $data['slug'] = $baseSlug . '-' . $counter++;
+        }
 
-        if ($image) {
+        // Gestion de l'image
+        if ($request->hasFile('image') && $request->file('image')->isValid()) {
             // Supprimer l'ancienne image si elle existe
             if ($inspiration->image) {
                 Storage::disk('public')->delete($inspiration->image);
             }
-            $imageName = time() . '_' . $image->getClientOriginalName(); // Génère un nom unique avec la date
-            $image->move(public_path('storage/inspirations'), $imageName); // Déplace directement dans public/categories
-            $data['image'] = 'inspirations/' . $imageName; // Stocke le chemin relatif dans $data
+
+            $filename = Str::slug($data['title']) . '-' . time() . '.webp';
+            $path = 'inspirations/' . $filename;
+
+            // Convertir en WebP avec Intervention Image
+            $image = Image::read($request->file('image'))->toWebp(80);
+            Storage::disk('public')->put($path, (string) $image);
+
+            // Stocke le chemin relatif
+            $data['image'] = $path;
         }
 
         $inspiration->update($data);

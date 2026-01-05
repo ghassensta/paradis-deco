@@ -180,9 +180,10 @@
 @section('js')
     <script>
         /* Constantes livraison */
-        const SHIPPING_FEE = {{ json_encode($shippingCost, JSON_NUMERIC_CHECK) }};
-        const FREE_SHIPPING_MIN = {{ json_encode($freeShippingLimit, JSON_NUMERIC_CHECK) }};
-
+        const SHIPPING_const = {{ json_encode($shippingCost, JSON_NUMERIC_CHECK) }};
+        const FREE_SHIPPING_Amount = {{ json_encode($freeShippingLimit, JSON_NUMERIC_CHECK) }};
+        console.log("SHIPPING_FEE",SHIPPING_const);
+        console.log("FREE_SHIPPING_MIN",FREE_SHIPPING_Amount);
         /* Helpers LocalStorage */
         const STORAGE_KEY = 'cart';
         const sanitize = c => c.filter(i => i.id && i.name && i.image && !isNaN(i.price));
@@ -227,7 +228,7 @@
                 </div>`;
             }).join('');
 
-            const shipping = subtotal >= FREE_SHIPPING_MIN ? 0 : SHIPPING_FEE;
+            const shipping = subtotal >= FREE_SHIPPING_Amount ? 0 : SHIPPING_const;
             const total = subtotal + shipping;
 
             subT.textContent = `${subtotal.toFixed(2)} DT`;

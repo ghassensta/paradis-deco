@@ -18,7 +18,7 @@
     <meta property="og:description"
         content="{{ $product->meta_description ?? Str::limit(strip_tags($product->description), 155) }}">
     <meta property="og:url" content="{{ url()->current() }}">
-    <meta property="og:image" content="{{ asset('storage/' . ($product->images[0] ?? 'default.jpg')) }}">
+    <meta property="og:image" content="{{ asset('storage/' . ($product->image_avant ?? 'default.jpg')) }}">
     <meta property="og:image:width" content="1200">
     <meta property="og:image:height" content="630">
     <meta property="product:availability" content="{{ $product->stock > 0 ? 'in stock' : 'out of stock' }}">
@@ -56,7 +56,7 @@
             <!-- Product Gallery -->
             <div class="lg:sticky lg:top-4">
                 <div class="relative mb-4 bg-white rounded-xl shadow-sm overflow-hidden group">
-                    <img id="mainImage" src="{{ Storage::url($product->images[0] ?? 'default.jpg') }}"
+                    <img id="mainImage" src="{{ Storage::url($product->image_avant ?? 'default.jpg') }}"
                         alt="{{ $product->name }} - image principale"
                         class="w-full h-96 object-contain main-image transform group-hover:scale-105 transition-transform duration-300" />
                     <button id="prevImage"
@@ -82,33 +82,55 @@
             <!-- Product Info -->
             <div>
                 <div class="bg-white rounded-xl shadow-sm p-6">
-                    <div class="mb-4">
-                        @if ($product->created_at->diffInDays(now()) < 10)
-                            <span
-                                class="inline-block bg-yellow-100 text-yellow-600 text-xs font-semibold px-2 py-1 rounded mb-2">Nouveauté</span>
-                        @endif
-                        <h1 class="text-2xl md:text-3xl font-bold text-gray-900 mb-2">{{ $product->name }}</h1>
-                        <div class="flex items-center mb-2">
-                            <div class="flex text-yellow-400 mr-2">
-                                <i class="fas fa-star"></i>
-                                <i class="fas fa-star"></i>
-                                <i class="fas fa-star"></i>
-                                <i class="fas fa-star"></i>
-                                <i class="fas fa-star-half-alt"></i>
-                            </div>
-                            <a href="#reviews" class="text-sm text-gray-500 hover:text-yellow-600">24 avis</a>
-                            <span class="mx-2 text-gray-300">|</span>
-                            @if ($product->stock > 0)
-                                <span class="flex items-center text-sm text-green-600">
-                                    <i class="fas fa-check-circle mr-1"></i> En stock
-                                </span>
-                            @else
-                                <span class="flex items-center text-sm text-red-600">
-                                    <i class="fas fa-times-circle mr-1"></i> Rupture de stock
-                                </span>
-                            @endif
-                        </div>
-                    </div>
+                   <div class="mb-4">
+    {{-- Badge nouveauté (moins de 10 jours) --}}
+    @if ($product->created_at && $product->created_at->diffInDays(now()) < 10)
+        <span class="inline-block bg-yellow-100 text-yellow-700 text-xs font-semibold px-2 py-1 rounded mb-2">
+            Nouveauté
+        </span>
+    @endif
+
+    {{-- Nom du produit --}}
+    <h1 class="text-2xl md:text-3xl font-bold text-gray-900 mb-2 leading-snug">
+        {{ $product->name }}
+    </h1>
+
+    {{-- Étoiles + avis + stock --}}
+    <div class="flex items-center flex-wrap gap-2 mb-2">
+        {{-- Note moyenne --}}
+        <div class="flex items-center text-yellow-400">
+            @for ($i = 1; $i <= 5; $i++)
+                @if ($i <= floor($averageRating))
+                    <i class="fas fa-star"></i>
+                @elseif ($i - $averageRating < 1)
+                    <i class="fas fa-star-half-alt"></i>
+                @else
+                    <i class="far fa-star"></i>
+                @endif
+            @endfor
+        </div>
+
+        {{-- Nombre d’avis --}}
+        <a href="#reviews" class="text-sm text-gray-500 hover:text-yellow-600">
+            {{ $totalReviews }} avis
+        </a>
+
+        {{-- Séparateur --}}
+        <span class="mx-2 text-gray-300">|</span>
+
+        {{-- Stock --}}
+        @if ($product->stock > 0)
+            <span class="flex items-center text-sm text-green-600">
+                <i class="fas fa-check-circle mr-1"></i> En stock
+            </span>
+        @else
+            <span class="flex items-center text-sm text-red-600">
+                <i class="fas fa-times-circle mr-1"></i> Rupture de stock
+            </span>
+        @endif
+    </div>
+</div>
+
                     <div class="mb-6">
                         <p class="text-3xl font-bold text-gray-900">{{ number_format($product->price, 2) }} DT</p>
                         <p class="text-sm text-gray-500">TVA incluse</p>
@@ -138,7 +160,7 @@
                                 class="flex-1 bg-yellow-600 hover:bg-yellow-700 text-white py-3 px-6 rounded-lg font-medium transition flex items-center justify-center focus:outline-none focus:ring-2 focus:ring-yellow-500 {{ $product->stock == 0 ? 'opacity-50 cursor-not-allowed' : '' }}"
                                 data-id="{{ $product->id }}" data-name="{{ $product->name }}"
                                 data-price="{{ $product->price }}"
-                                data-image="{{ Storage::url($product->images[0] ?? 'default.jpg') }}"
+                                data-image="{{ Storage::url($product->image_avant ?? 'default.jpg') }}"
                                 data-stock="{{ $product->stock }}" onclick="addToCart(this)"
                                 aria-label="Ajouter {{ $product->name }} au panier"
                                 {{ $product->stock == 0 ? 'disabled' : '' }}>
@@ -319,7 +341,7 @@
                             <div class="relative overflow-hidden flex-grow">
                                 <a href="{{ route('preview-article', $item->slug) }}" target="_blank"
                                     title="{{ $item->meta_title ?? $item->name }}" class="block h-full">
-                                    <img src="{{ asset('storage/' . ($item->images[0] ?? 'default.jpg')) }}"
+                                    <img src="{{ asset('storage/' . ($item->image_avant ?? 'default.jpg')) }}"
                                         alt="{{ $item->name }}"
                                         class="h-48 sm:h-56 w-full object-cover group-hover:scale-105 transition-transform duration-500 ease-in-out"
                                         loading="lazy" itemprop="image" />
@@ -369,7 +391,7 @@
                                         <button aria-label="Ajouter {{ $item->name }} au panier"
                                             data-id="{{ $item->id }}" data-name="{{ $item->name }}"
                                             data-price="{{ $item->price }}"
-                                            data-image="{{ asset('storage/' . ($item->images[0] ?? 'default.jpg')) }}"
+                                            data-image="{{ asset('storage/' . ($item->image_avant ?? 'default.jpg')) }}"
                                             data-stock="{{ $item->stock }}"
                                             class="cursor-pointer flex items-center justify-center gap-1 bg-black hover:bg-gray-800 text-white px-3 py-2 rounded-lg transition-colors duration-300 focus:outline-none focus:ring-2 focus:ring-yellow-500 focus:ring-opacity-50 transform hover:scale-[1.03] active:scale-95 text-sm sm:text-base"
                                             @if ($item->stock == 0) disabled @endif onclick="addToCart(this)">

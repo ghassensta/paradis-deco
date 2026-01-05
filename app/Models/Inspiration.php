@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Str;
+
 class Inspiration extends Model
 {
     protected $table = 'inspirations';
@@ -16,12 +17,14 @@ class Inspiration extends Model
         'description',
         'meta_title',
         'meta_description',
+        'gallery',
         'is_active',
     ];
 
     protected $casts = [
         'slug' => 'string',
         'is_active' => 'boolean',
+        'gallery' => 'array',
     ];
 
     /**
@@ -35,22 +38,40 @@ class Inspiration extends Model
     }
 
     /**
+     * Scope for active inspirations.
+     */
+    public function scopeActive($query)
+    {
+        return $query->where('is_active', true);
+    }
+
+    /**
      * Boot the model.
      */
     protected static function boot()
     {
         parent::boot();
 
-        // Automatically generate slug if not provided
+        // Automatically generate unique slug if not provided
         static::creating(function ($inspiration) {
             if (empty($inspiration->slug)) {
                 $inspiration->slug = Str::slug($inspiration->title);
+                $baseSlug = $inspiration->slug;
+                $counter = 1;
+                while (static::where('slug', $inspiration->slug)->exists()) {
+                    $inspiration->slug = $baseSlug . '-' . $counter++;
+                }
             }
         });
 
         static::updating(function ($inspiration) {
-            if (empty($inspiration->slug)) {
+            if ($inspiration->isDirty('title') && empty($inspiration->slug)) {
                 $inspiration->slug = Str::slug($inspiration->title);
+                $baseSlug = $inspiration->slug;
+                $counter = 1;
+                while (static::where('slug', $inspiration->slug)->where('id', '!=', $inspiration->id)->exists()) {
+                    $inspiration->slug = $baseSlug . '-' . $counter++;
+                }
             }
         });
     }

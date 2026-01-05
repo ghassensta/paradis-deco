@@ -17,8 +17,9 @@ class AccueilController extends Controller
         $latestProducts = Product::where('is_active', true)->latest()
             ->take(10)
             ->get();
-            
+
         $latestCategorys = Category::where('is_active', true)->latest()->take(4)->get();
+        
         $inspirations = Inspiration::where('is_active', true)->latest()->take(4)->get();
         $testimonials = Avis::where('approved', true)
             ->with('product:id,name')
@@ -178,4 +179,13 @@ class AccueilController extends Controller
             'freeShippingLimit' => config('shop.free_shipping_limit'),
         ]);
     }
+
+
+  public function AllInspirations()
+    {
+        return view('front-office.inspirations.allinspirations', [
+            'inspirations' => Inspiration::active()->latest()->paginate(10),
+        ]);
+    }
+
 }

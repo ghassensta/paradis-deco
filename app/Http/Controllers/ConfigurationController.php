@@ -6,6 +6,7 @@ use App\Models\Configuration;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
+use Intervention\Image\Laravel\Facades\Image;
 
 class ConfigurationController extends Controller
 {
@@ -17,7 +18,6 @@ class ConfigurationController extends Controller
         $settings = Configuration::first();
         return view('admin.configuration.index', ["settings" => $settings]);
     }
-
 
     /**
      * Show the form for creating a new resource.
@@ -48,78 +48,78 @@ class ConfigurationController extends Controller
      */
     public function edit(string $id)
     {
-
+        //
     }
 
     /**
      * Update the specified resource in storage.
      */
+    public function update(Request $request)
+    {
+        /* 1. Validation */
+        $validated = $request->validate([
+            'site_name'               => 'required|string|max:255',
+            'support_email'           => 'required|email|max:255',
+            /* langues dispos */
+            'default_language'        => 'required|string|in:en,fr,es',
+            /* devises autorisées */
+            'currency'                => 'required|string|in:USD,EUR,GBP',
+            'meta_title'              => 'nullable|string|max:255',
+            'meta_description'        => 'nullable|string|max:1000',
+            'shipping_cost'           => 'required|numeric|min:0',
+            'free_shipping_threshold' => 'required|numeric|min:0',
+            'delivery_estimate_days'  => 'required|integer|min:1',
+            'maintenance_mode'        => 'required|boolean',
+            /* fichiers : JPEG / PNG / JPG / WEBP / AVIF / GIF */
+            'site_logo'       => 'nullable|image|',
+            'homepage_banner' => 'nullable|image|',
+        ]);
 
+        $setting = Configuration::firstOrFail();
 
-public function update(Request $request)
-{
-    /* 1. Validation */
-   $validated = $request->validate([
-    'site_name'               => 'required|string|max:255',
-    'support_email'           => 'required|email|max:255',
+        /* 2. Gestion du logo */
+        if ($request->hasFile('site_logo') && $request->file('site_logo')->isValid()) {
+            // Supprimer l’ancien fichier s’il existe
+            if ($setting->site_logo) {
+                Storage::disk('public')->delete($setting->site_logo);
+            }
 
-    /* langues dispos */
-    'default_language'        => 'required|string|in:en,fr,es',
+            // Nouveau nom de fichier
+            $filename = Str::slug($validated['site_name']) . '-logo-' . uniqid() . '.webp';
+            $path = 'logos/' . $filename;
 
-    /* devises autorisées */
-    'currency'                => 'required|string|in:USD,EUR,GBP',
+            // Convertir en WebP avec Intervention Image
+            $image = Image::read($request->file('site_logo'))->toWebp(80);
+            Storage::disk('public')->put($path, (string) $image);
 
-    'meta_title'              => 'nullable|string|max:255',
-    'meta_description'        => 'nullable|string|max:1000',
-
-    'shipping_cost'           => 'required|numeric|min:0',
-    'free_shipping_threshold' => 'required|numeric|min:0',
-    'delivery_estimate_days'  => 'required|integer|min:1',
-    'maintenance_mode'        => 'required|boolean',
-
-    /* fichiers : JPEG / PNG / JPG / WEBP / AVIF / GIF */
-    'site_logo'       => 'nullable|image|mimes:jpeg,png,jpg,webp,avif,gif|max:2048',
-    'homepage_banner' => 'nullable|image|mimes:jpeg,png,jpg,webp,avif,gif|max:2048',
-]);
-
-
-    $setting = Configuration::firstOrFail();
-
-    /* 2. Gestion du logo */
-    if ($request->hasFile('site_logo')) {
-
-        // Supprimer l’ancien fichier s’il existe physiquement
-        if ($setting->site_logo && file_exists(public_path($setting->site_logo))) {
-            @unlink(public_path($setting->site_logo));
+            // Stocke le chemin relatif
+            $validated['site_logo'] = $path;
         }
 
-        // Nouveau nom de fichier (slug + id unique)
-        $filename = Str::slug($request->site_name).'-logo-'.uniqid().'.'.$request->site_logo->extension();
+        /* 3. Gestion du banner */
+        if ($request->hasFile('homepage_banner') && $request->file('homepage_banner')->isValid()) {
+            // Supprimer l’ancien fichier s’il existe
+            if ($setting->homepage_banner) {
+                Storage::disk('public')->delete($setting->homepage_banner);
+            }
 
-        // Dossier de destination dans /public
-        $request->site_logo->move(public_path('storage/logos'), $filename);
+            // Nouveau nom de fichier
+            $filename = 'banner-' . uniqid() . '.webp';
+            $path = 'banners/' . $filename;
 
-        // Stocke le chemin relatif (pour asset())
-        $validated['site_logo'] = 'logos/'.$filename;
-    }
+            // Convertir en WebP avec Intervention Image
+            $image = Image::read($request->file('homepage_banner'))->toWebp(80);
+            Storage::disk('public')->put($path, (string) $image);
 
-    /* 3. Gestion du banner */
-    if ($request->hasFile('homepage_banner')) {
-
-        if ($setting->homepage_banner && file_exists(public_path($setting->homepage_banner))) {
-            @unlink(public_path($setting->homepage_banner));
+            // Stocke le chemin relatif
+            $validated['homepage_banner'] = $path;
         }
 
-        $filename = 'banner-'.uniqid().'.'.$request->homepage_banner->extension();
-        $request->homepage_banner->move(public_path('storage/banners'), $filename);
-        $validated['homepage_banner'] = 'banners/'.$filename;
+        /* 4. Mise à jour */
+        $setting->update($validated);
+
+        return back()->with('message', 'Paramètres mis à jour avec succès.');
     }
-
-    /* 4. Mise à jour */
-    $setting->update($validated);
-
-    return back()->with('message', 'Paramètres mis à jour avec succès.');
-}
 
     /**
      * Remove the specified resource from storage.

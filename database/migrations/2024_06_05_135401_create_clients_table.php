@@ -17,7 +17,7 @@ return new class extends Migration
             $table->string('name');
             $table->string('email')->nullable();
             $table->string('phone')->nullable();
-            // Adresse par défaut
+            $table->string('city')->nullable();
             $table->string('adresse');
             // Sécurité et tokens
             $table->rememberToken();

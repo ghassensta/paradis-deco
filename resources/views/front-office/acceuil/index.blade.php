@@ -113,7 +113,7 @@
                     <a href="{{ route('categorie.produits', $item->slug) }}"
                         class="group relative overflow-hidden rounded-xl shadow-md h-48">
                         <img src="{{ $item->image_url ?? 'https://via.placeholder.com/500x300?text=Category' }}"
-                            alt="{{ $item->name }}"
+                            alt="{{ $item->name }} | {{ $config->site_name }}"
                             class="w-full h-full object-cover group-hover:scale-105 transition duration-500" loading="lazy">
                         <div class="absolute inset-0 bg-black/30 flex items-center justify-center">
                             <h3 class="text-white text-xl font-bold group-hover:scale-110 transition">
@@ -157,94 +157,85 @@
                             @if ($item->is_active)
                                 <div class="swiper-slide">
                                     <!-- CARTE PRODUIT -->
-                                    <article
-                                        class="bg-white rounded-2xl shadow-lg overflow-hidden group hover:shadow-xl transition-all duration-300 hover:-translate-y-1"
-                                        itemscope itemtype="http://schema.org/Product">
-                                        <!-- Image -->
-                                        <div class="relative overflow-hidden">
-                                            <a href="{{ route('preview-article', $item->slug) }}"
-                                                title="{{ $item->meta_title ?? $item->name }}" class="block">
-                                                <img src="{{ asset('storage/' . $item->images[0]) }}"
-                                                    alt="{{ $item->name }}"
-                                                    class="h-64 w-full object-cover group-hover:scale-105 transition-transform duration-500 ease-in-out"
-                                                    loading="lazy" itemprop="image">
-                                            </a>
-                                            <div class="absolute top-4 right-4">
-                                                <span
-                                                    class="bg-[#228B22] text-white text-xs font-semibold px-3 py-1 rounded-full uppercase">
-                                                    Nouveau
-                                                </span>
-                                            </div>
-                                            @if ($item->stock <= 5 && $item->stock > 0)
-                                                <div class="absolute top-4 left-4">
-                                                    <span
-                                                        class="bg-red-500 text-white text-xs font-semibold px-3 py-1 rounded-full uppercase">
-                                                        Stock faible
-                                                    </span>
-                                                </div>
-                                            @elseif ($item->stock == 0)
-                                                <div class="absolute top-4 left-4">
-                                                    <span
-                                                        class="bg-gray-600 text-white text-xs font-semibold px-3 py-1 rounded-full uppercase">
-                                                        Épuisé
-                                                    </span>
-                                                </div>
-                                            @endif
-                                        </div>
+                                 <!-- CARTE PRODUIT -->
+<article
+    class="bg-white rounded-2xl shadow-lg overflow-hidden group hover:shadow-xl transition-all duration-300 hover:-translate-y-1 h-[460px] flex flex-col justify-between"
+    itemscope itemtype="http://schema.org/Product">
+    <!-- Image -->
+    <div class="relative h-64 overflow-hidden flex items-center justify-center bg-gray-100">
+        <a href="{{ route('preview-article', $item->slug) }}" title="{{ $item->meta_title ?? $item->name }}"
+            class="block w-full h-full">
+            <img src="{{ asset('storage/' . $item->image_avant) }}"
+                alt="{{ $item->name }} | {{ $config->site_name }}"
+                class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500 ease-in-out"
+                loading="lazy" itemprop="image">
+        </a>
 
-                                        <!-- Contenu -->
-                                        <div class="p-5">
-                                            <div class="flex justify-between items-start mb-3">
-                                                <div>
-                                                    <h3 class="text-lg font-semibold text-gray-800 hover:text-yellow-600 transition-colors"
-                                                        itemprop="name">
-                                                        <a href="{{ route('preview-article', $item->slug) }}">
-                                                            {{ $item->name }}
-                                                        </a>
-                                                    </h3>
-                                                    <p class="text-gray-500 text-sm mt-1">
-                                                        {{ Str::limit($item->description, 50) }}
-                                                    </p>
-                                                </div>
-                                                <div class="flex items-center" itemprop="aggregateRating" itemscope
-                                                    itemtype="http://schema.org/AggregateRating">
-                                                    <i class="fas fa-star text-yellow-400 text-sm"></i>
-                                                    <span class="text-gray-600 text-sm ml-1"
-                                                        itemprop="ratingValue">4.8</span>
-                                                    <meta itemprop="reviewCount" content="120">
-                                                </div>
-                                            </div>
+        <!-- Badge "Nouveau" -->
+        <div class="absolute top-4 right-4">
+            <span class="bg-[#228B22] text-white text-xs font-semibold px-3 py-1 rounded-full uppercase">
+                Nouveau
+            </span>
+        </div>
 
-                                            <!-- Prix & action -->
-                                            <div class="flex justify-between items-center">
-                                                <p class="text-black font-bold text-xl" itemprop="offers" itemscope
-                                                    itemtype="http://schema.org/Offer">
-                                                    <span itemprop="price">{{ number_format($item->price, 2) }}</span> DT
-                                                    <meta itemprop="priceCurrency" content="TND">
-                                                </p>
-                                                <button aria-label="Ajouter {{ $item->name }} au panier"
-                                                    data-id="{{ $item->id }}" data-name="{{ $item->name }}"
-                                                    data-price="{{ $item->price }}"
-                                                    data-image="{{ asset('storage/' . $item->images[0]) }}"
-                                                    data-stock="{{ $item->stock }}"
-                                                    class="flex items-center gap-2 bg-black hover:bg-gray-800 text-white px-4 py-2 rounded-lg transition transform hover:scale-105"
-                                                    @if ($item->stock == 0) disabled @endif
-                                                    onclick="addToCart(this)">
-                                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5"
-                                                        fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                                        <path stroke-linecap="round" stroke-linejoin="round"
-                                                            stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
-                                                    </svg>
-                                                    Ajouter
-                                                </button>
-                                            </div>
-                                        </div>
+        <!-- Stock -->
+        @if ($item->stock <= 5 && $item->stock > 0)
+            <div class="absolute top-4 left-4">
+                <span class="bg-red-500 text-white text-xs font-semibold px-3 py-1 rounded-full uppercase">
+                    Stock faible
+                </span>
+            </div>
+        @elseif ($item->stock == 0)
+            <div class="absolute top-4 left-4">
+                <span class="bg-gray-600 text-white text-xs font-semibold px-3 py-1 rounded-full uppercase">
+                    Épuisé
+                </span>
+            </div>
+        @endif
+    </div>
 
-                                        <!-- SEO -->
-                                        <meta itemprop="description"
-                                            content="{{ $item->meta_description ?? Str::limit($item->description, 80) }}">
-                                        <meta itemprop="url" content="{{ route('preview-article', $item->slug) }}">
-                                    </article>
+    <!-- Contenu -->
+    <div class="p-5 flex-1 flex flex-col justify-between">
+        <div class="mb-4">
+            <h3 class="text-lg font-semibold text-gray-800 hover:text-yellow-600 transition-colors line-clamp-1"
+                itemprop="name">
+                <a href="{{ route('preview-article', $item->slug) }}">
+                    {{ Str::limit($item->name, 50) }}
+                </a>
+            </h3>
+            <p class="text-gray-500 text-sm mt-1 line-clamp-2">
+                {{ Str::limit(strip_tags($item->description), 80) }}
+            </p>
+        </div>
+
+        <!-- Prix & action -->
+        <div class="flex justify-between items-center mt-auto">
+            <p class="text-black font-bold text-xl" itemprop="offers" itemscope itemtype="http://schema.org/Offer">
+                <span itemprop="price">{{ number_format($item->price, 2) }}</span> DT
+                <meta itemprop="priceCurrency" content="TND">
+            </p>
+            <button aria-label="Ajouter {{ $item->name }} au panier"
+                data-id="{{ $item->id }}" data-name="{{ $item->name }}"
+                data-price="{{ $item->price }}" data-image="{{ asset('storage/' . $item->images[0]) }}"
+                data-stock="{{ $item->stock }}"
+                class="flex items-center gap-2 bg-black hover:bg-gray-800 text-white px-4 py-2 rounded-lg transition transform hover:scale-105"
+                @if ($item->stock == 0) disabled @endif
+                onclick="addToCart(this)">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none"
+                    viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                        d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+                </svg>
+                Ajouter
+            </button>
+        </div>
+    </div>
+
+    <!-- SEO -->
+    <meta itemprop="description" content="{{ $item->meta_description ?? Str::limit($item->description, 80) }}">
+    <meta itemprop="url" content="{{ route('preview-article', $item->slug) }}">
+</article>
+
                                 </div>
                             @endif
                         @empty
@@ -348,8 +339,8 @@
                 {{-- Bouton « Voir plus » uniquement si on a ≥4 éléments (ou selon ton critère) --}}
                 @if ($inspirations->count() >= 4)
                     <div class="text-center mt-12">
-                        <a href="{{ route('inspirations.index') }}"
-                            class="inline-block px-8 py-3 bg-primary text-white rounded-full font-bold
+                        <a href="{{ route('allinspirations') }}"
+                            class="inline-block px-8 py-3 bg-black text-white rounded-full font-bold
                           hover:bg-primary-dark transition">
                             Voir plus d'inspirations
                         </a>
@@ -380,7 +371,7 @@
                         </div>
                         <p class="text-gray-600 mb-6">{{ Str::limit($testimonial->comment, 150, '...') }}</p>
                         <div class="flex items-center">
-                            <img src="https://i.pravatar.cc/128?img={{ rand(1, 70) }}" loading="lazy" alt="{{ $testimonial->name }}"
+                            <img src="https://i.pravatar.cc/128?img={{ rand(1, 70) }}" loading="lazy"  alt="{{ $testimonial->name }} | {{ $config->site_name }}"
                                 class="w-8 h-8 rounded-full mr-2">
                             <div>
                                 <h4 class="font-bold">{{ $testimonial->name }}</h4>

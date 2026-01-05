@@ -12,6 +12,7 @@ class Product extends Model
      */
     protected $fillable = [
         'category_ids',
+        'image_avant',
         'images',
         'name',
         'slug',
@@ -32,7 +33,7 @@ class Product extends Model
     protected $casts = [
         'images' => 'array',
         'category_ids' => 'array',
-        'price' => 'decimal:2',
+        'price' => 'decimal:3',  // Changé à 3 décimales pour cohérence avec DT
         'stock' => 'integer',
         'is_active' => 'boolean',
     ];

@@ -3,6 +3,7 @@
 namespace App\Providers;
 
 use Illuminate\Support\ServiceProvider;
+use App\Models\Configuration;
 
 class AppServiceProvider extends ServiceProvider
 {
@@ -20,7 +21,9 @@ class AppServiceProvider extends ServiceProvider
     public function boot(): void
     {
         view()->composer('*', function ($view) {
-            $view->with('config', \App\Models\Configuration::first());
+            $config=Configuration::first();
+            //dd($config);
+            $view->with(['config'=>$config]);
         });
     }
 }

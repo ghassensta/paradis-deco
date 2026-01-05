@@ -1,498 +1,763 @@
 @extends('admin.layouts.app')
 @section('content')
-    <div class="container-xxl flex-grow-1 container-p-y">
-        <div class="d-flex justify-content-between align-items-center mb-4">
-            <h4 class="fw-bold mb-0">Liste des Commandes</h4>
-        </div>
-        <div class="row g-4">
-            <div class="col-12">
-                <div class="card shadow-sm border-0">
-                    <div class="card-datatable table-responsive p-4">
-                        <div class="mb-4" role="group">
-                            <label for="boutique-select" class="form-label fw-semibold mb-2">Filtrer par statut :</label>
-                            <select name="statut" id="boutique-select" class="select2filtre form-select w-100 w-md-25"
-                                aria-label="Sélection statut">
-                                <option value="all" selected>Toutes</option>
-                                @forelse ($statuts as $item)
-                                    <option value="{{ $item->id }}">
-                                        {{ $item->name ?? 'Statut Inconnu' }}
-                                    </option>
-                                @empty
-                                    <option disabled>Aucun statut disponible</option>
-                                @endforelse
-                            </select>
-                        </div>
+<div class="container-xxl flex-grow-1 container-p-y">
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <h4 class="fw-bold mb-0">
+            <i class="ti ti-shopping-cart me-2"></i>Commandes
+        </h4>
+    </div>
 
-                        <table class="datatables-commandes table table-hover border-top-0">
-                            <thead class="bg-light">
-                                <tr>
-                                    <th></th>
-                                    <th>Date</th>
-                                    <th>Client</th>
-                                    <th>Total</th>
-                                    <th>Produits</th>
-                                    <th>Statut</th>
-                                    <th>Actions</th>
-                                </tr>
-                            </thead>
-                        </table>
-                    </div>
+    <!-- Filtre statut - Mobile friendly -->
+    <div class="card mb-3">
+        <div class="card-body py-3">
+            <div class="row g-2 align-items-center">
+                <div class="col-12 col-md-4">
+                    <select name="statut" id="statut-filter" class="form-select">
+                        <option value="all" selected>📊 Tous les statuts</option>
+                        @forelse ($statuts as $item)
+                            <option value="{{ $item->id }}">{{ $item->name ?? 'Statut Inconnu' }}</option>
+                        @empty
+                            <option disabled>Aucun statut</option>
+                        @endforelse
+                    </select>
+                </div>
+                <div class="col-12 col-md-4">
+                    <input type="text" id="search-input" class="form-control" placeholder="🔍 Rechercher...">
                 </div>
             </div>
         </div>
     </div>
 
-    <!-- Update Status Modal -->
-    <div class="modal fade" id="updateStatusModal" tabindex="-1" aria-hidden="true">
-        <div class="modal-dialog modal-lg modal-simple">
-            <div class="modal-content p-3 p-md-5">
-
-                <!-- Titre du modal (ajouté) -->
-                <div class="modal-header">
-                    <h5 class="modal-title">Mettre&nbsp;à&nbsp;jour le statut</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fermer"></button>
-                </div>
-
-                <div class="modal-body" id="bodyContentStatut">
+    <!-- Vue Desktop : DataTable -->
+    <div class="d-none d-lg-block">
+        <div class="card shadow-sm border-0">
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="datatables-commandes table table-hover">
+                        <thead>
+                            <tr>
+                                <th>N° Commande</th>
+                                <th>Date</th>
+                                <th>Client</th>
+                                <th class="text-center">Articles</th>
+                                <th>Total TTC</th>
+                                <th>Statut</th>
+                                <th class="text-center">Actions</th>
+                            </tr>
+                        </thead>
+                    </table>
                 </div>
             </div>
         </div>
     </div>
+
+    <!-- Vue Mobile : Cards -->
+    <div class="d-lg-none" id="mobile-orders-container">
+        <div class="text-center py-5">
+            <div class="spinner-border text-primary" role="status">
+                <span class="visually-hidden">Chargement...</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Pagination Mobile -->
+    <div class="d-lg-none mt-3" id="mobile-pagination">
+        <nav>
+            <ul class="pagination pagination-sm justify-content-center"></ul>
+        </nav>
+    </div>
+</div>
+
+<!-- Modal Détails (Optimisé Mobile) -->
+<div class="modal fade" id="orderDetailsModal" tabindex="-1">
+    <div class="modal-dialog modal-fullscreen-sm-down modal-xl modal-dialog-scrollable">
+        <div class="modal-content">
+            <div class="modal-header bg-gradient-primary text-white">
+                <div>
+                    <h6 class="modal-title mb-0">
+                        <i class="ti ti-receipt me-2"></i>Commande <span id="modal-order-number"></span>
+                    </h6>
+                    <small class="opacity-75" id="modal-order-date"></small>
+                </div>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body p-0" id="orderDetailsContent"></div>
+            <div class="modal-footer border-top">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Fermer</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal Statut -->
+<div class="modal fade" id="updateStatusModal" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">
+                    <i class="ti ti-edit me-2"></i>Modifier le statut
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body" id="updateStatusContent"></div>
+        </div>
+    </div>
+</div>
 @endsection
 
 @section('css')
-    <link rel="stylesheet" href="{{ asset('assets/vendor/libs/datatables-bs5/datatables.bootstrap5.css') }}" />
-    <link rel="stylesheet" href="{{ asset('assets/vendor/libs/datatables-responsive-bs5/responsive.bootstrap5.css') }}" />
-    <link rel="stylesheet" href="{{ asset('assets/vendor/libs/select2/select2.css') }}" />
-    <style>
-        /* Custom Styles for Improved Design */
-        .card {
-            border-radius: 0.75rem;
-            overflow: hidden;
-        }
+<link rel="stylesheet" href="{{ asset('assets/vendor/libs/datatables-bs5/datatables.bootstrap5.css') }}" />
+<style>
+    /* Mobile Cards */
+    .order-card {
+        border-radius: 12px;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+        transition: all 0.3s ease;
+        margin-bottom: 1rem;
+        border: 1px solid #e9ecef;
+        overflow: hidden;
+    }
+    .order-card:active {
+        transform: scale(0.98);
+    }
+    .order-card-header {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        padding: 1rem;
+    }
+    .order-card-body {
+        padding: 1rem;
+    }
 
-        .card-datatable {
-            padding: 1.5rem;
-        }
+    /* Info rows */
+    .info-row {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 0.75rem 0;
+        border-bottom: 1px solid #f0f0f0;
+    }
+    .info-row:last-child {
+        border-bottom: none;
+    }
+    .info-label {
+        color: #6c757d;
+        font-size: 0.875rem;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+    .info-value {
+        font-weight: 600;
+        text-align: right;
+    }
 
-        .table th,
-        .table td {
-            vertical-align: middle;
-            padding: 1rem;
-        }
+    /* Product items dans modal */
+    .product-item-mobile {
+        border: 1px solid #e9ecef;
+        border-radius: 10px;
+        padding: 0.75rem;
+        margin-bottom: 0.75rem;
+        background: #fafafa;
+    }
+    .product-img-mobile {
+        width: 60px;
+        height: 60px;
+        object-fit: cover;
+        border-radius: 8px;
+    }
+    .product-placeholder-mobile {
+        width: 60px;
+        height: 60px;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        border-radius: 8px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
 
-        .table-hover tbody tr:hover {
-            background-color: #f8f9fa;
-        }
+    /* Action buttons mobile */
+    .action-btn-mobile {
+        border-radius: 8px;
+        padding: 0.5rem;
+        font-size: 0.875rem;
+        flex: 1;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 0.5rem;
+    }
 
-        .badge {
-            font-size: 0.85rem;
-            padding: 0.5em 0.75em;
-            border-radius: 0.5rem;
-            transition: all 0.2s ease;
-        }
+    /* Badges */
+    .badge-mobile {
+        padding: 0.5em 0.75em;
+        border-radius: 20px;
+        font-size: 0.813rem;
+        font-weight: 500;
+    }
 
-        .form-select {
-            border-radius: 0.5rem;
-            padding: 0.5rem 1rem;
-            font-size: 0.95rem;
-        }
+    /* Summary section */
+    .summary-section {
+        background: #f8f9fa;
+        border-radius: 10px;
+        padding: 1rem;
+    }
+    .summary-line {
+        display: flex;
+        justify-content: space-between;
+        padding: 0.5rem 0;
+        border-bottom: 1px dashed #dee2e6;
+    }
+    .summary-line:last-child {
+        border-bottom: none;
+        border-top: 2px solid #007bff;
+        padding-top: 1rem;
+        margin-top: 0.5rem;
+    }
 
-        .dataTables_wrapper .dataTables_filter input,
-        .dataTables_wrapper .dataTables_length select {
-            border-radius: 0.5rem;
-            padding: 0.5rem 1rem;
-            border: 1px solid #ced4da;
+    /* Desktop specific */
+    @media (min-width: 992px) {
+        .product-img {
+            width: 70px;
+            height: 70px;
+            object-fit: cover;
+            border-radius: 8px;
         }
+        .badge-status {
+            padding: 0.5em 1em;
+            font-size: 0.875rem;
+            border-radius: 20px;
+            font-weight: 500;
+        }
+    }
 
-        .dataTables_wrapper .dataTables_paginate .paginate_button {
-            border-radius: 0.5rem;
-            margin: 0 0.25rem;
-            padding: 0.5rem 1rem;
-            transition: all 0.2s ease;
+    /* Animations */
+    @keyframes fadeInUp {
+        from {
+            opacity: 0;
+            transform: translateY(20px);
         }
-
-        .dataTables_wrapper .dataTables_paginate .paginate_button.current {
-            background-color: #007bff;
-            color: white !important;
-            border: none;
+        to {
+            opacity: 1;
+            transform: translateY(0);
         }
-
-        .btn-action {
-            border-radius: 0.5rem;
-            padding: 0.5rem;
-            transition: all 0.2s ease;
-        }
-
-        .btn-action:hover {
-            background-color: #e9ecef;
-        }
-
-        /* Modal Styling */
-        .modal-content {
-            border-radius: 0.75rem;
-            border: none;
-        }
-
-        .modal-header,
-        .modal-footer {
-            border: none;
-        }
-    </style>
+    }
+    .order-card {
+        animation: fadeInUp 0.3s ease;
+    }
+</style>
 @endsection
 
 @section('js')
-    <script src="{{ asset('assets/vendor/libs/datatables-bs5/datatables-bootstrap5.js') }}"></script>
-    <script src="{{ asset('assets/vendor/libs/select2/select2.js') }}"></script>
-    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
-    <script>
-        'use strict';
+<script src="{{ asset('assets/vendor/libs/datatables-bs5/datatables-bootstrap5.js') }}"></script>
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+<script>
+'use strict';
 
-        $(function() {
-            var dtCommandeTable = $('.datatables-commandes'),
-                statusObj = {
-                    0: {
-                        title: 'En cours de traitement',
-                        class: 'bg-label-warning'
-                    },
-                    1: {
-                        title: 'Livrée et payée',
-                        class: 'bg-label-success'
-                    },
-                    2: {
-                        title: 'Annulé',
-                        class: 'bg-label-danger'
+$(function() {
+    let dtCommande;
+    let mobileOrders = [];
+    let currentPage = 1;
+    let itemsPerPage = 10;
+
+    // Détection mobile
+    const isMobile = window.innerWidth < 992;
+
+    // ============================================
+    // DESKTOP: DataTable
+    // ============================================
+    if (!isMobile && $('.datatables-commandes').length) {
+        dtCommande = $('.datatables-commandes').DataTable({
+            processing: true,
+            serverSide: true,
+            responsive: false,
+            ajax: {
+                url: "{{ route('commandes.get') }}",
+                type: "GET",
+                data: function(d) {
+                    d._token = '{{ csrf_token() }}';
+                    d.statut_id = $('#statut-filter').val();
+                }
+            },
+            columns: [
+                { data: 'numero_commande' },
+                { data: 'date' },
+                { data: 'client_name' },
+                { data: 'items_count' },
+                { data: 'total_ttc' },
+                { data: 'statut_name' },
+                { data: null }
+            ],
+            columnDefs: [
+                {
+                    targets: 0,
+                    render: function(data, type, full) {
+                        return `<span class="fw-bold text-primary">${data}</span>`;
                     }
-                };
+                },
+                {
+                    targets: 2,
+                    render: function(data, type, full) {
+                        return `
+                            <div class="d-flex flex-column">
+                                <span class="fw-semibold">${data}</span>
+                                <small class="text-muted">
+                                    <i class="ti ti-phone ti-xs me-1"></i>${full.client_phone}
+                                </small>
+                            </div>
+                        `;
+                    }
+                },
+                {
+                    targets: 3,
+                    className: 'text-center',
+                    render: function(data, type, full) {
+                        return `<span class="badge bg-label-info rounded-pill">${data}</span>`;
+                    }
+                },
+                {
+                    targets: 4,
+                    render: function(data, type, full) {
+                        return `<span class="fw-bold text-success">${parseFloat(data).toLocaleString('fr-TN', {minimumFractionDigits: 3})} DT</span>`;
+                    }
+                },
+                {
+                    targets: 5,
+                    render: function(data, type, full) {
+                        return getStatusBadge(data);
+                    }
+                },
+                {
+                    targets: -1,
+                    orderable: false,
+                    searchable: false,
+                    className: 'text-center',
+                    render: function(data, type, full) {
+                        return getActionButtons(full);
+                    }
+                }
+            ],
+            order: [[1, 'desc']],
+            language: {
+                url: '//cdn.datatables.net/plug-ins/1.13.7/i18n/fr-FR.json',
+                searchPlaceholder: "Rechercher...",
+                search: ""
+            }
+        });
+    }
 
-            if (dtCommandeTable.length) {
-                var dtCommande = dtCommandeTable.DataTable({
-                    processing: true,
-                    serverSide: true,
-                    ajax: {
-                        url: "{{ route('commandes.get') }}",
-                        type: "GET",
-                        data: function(d) {
-                            d._token = '{{ csrf_token() }}';
-                            d.statut_id = $('select[name="statut"]').val();
+    // ============================================
+    // MOBILE: Cards View
+    // ============================================
+    if (isMobile) {
+        loadMobileOrders();
+
+        $('#search-input').on('keyup', debounce(function() {
+            loadMobileOrders();
+        }, 500));
+    }
+
+    function loadMobileOrders() {
+        $.ajax({
+            url: "{{ route('commandes.get') }}",
+            type: "GET",
+            data: {
+                _token: '{{ csrf_token() }}',
+                statut_id: $('#statut-filter').val(),
+                start: 0,
+                length: 100, // Charger plus pour le client-side filtering
+                search: { value: $('#search-input').val() }
+            },
+            success: function(response) {
+                mobileOrders = response.data;
+                renderMobileOrders();
+            }
+        });
+    }
+
+    function renderMobileOrders() {
+        const container = $('#mobile-orders-container');
+
+        if (mobileOrders.length === 0) {
+            container.html(`
+                <div class="text-center py-5">
+                    <i class="ti ti-inbox ti-lg text-muted mb-3"></i>
+                    <p class="text-muted">Aucune commande trouvée</p>
+                </div>
+            `);
+            return;
+        }
+
+        const start = (currentPage - 1) * itemsPerPage;
+        const end = start + itemsPerPage;
+        const paginatedOrders = mobileOrders.slice(start, end);
+
+        let html = '';
+        paginatedOrders.forEach(order => {
+            const statusBadge = getStatusBadgeClass(order.statut_name);
+
+            html += `
+                <div class="order-card" data-order-id="${order.id}">
+                    <div class="order-card-header">
+                        <div class="d-flex justify-content-between align-items-start">
+                            <div>
+                                <h6 class="mb-1">${order.numero_commande}</h6>
+                                <small class="opacity-75">
+                                    <i class="ti ti-calendar ti-xs me-1"></i>${order.date}
+                                </small>
+                            </div>
+                            <span class="badge ${statusBadge} badge-mobile">${order.statut_name}</span>
+                        </div>
+                    </div>
+                    <div class="order-card-body">
+                        <div class="info-row">
+                            <span class="info-label">
+                                <i class="ti ti-user"></i> Client
+                            </span>
+                            <span class="info-value">${order.client_name}</span>
+                        </div>
+                        <div class="info-row">
+                            <span class="info-label">
+                                <i class="ti ti-phone"></i> Téléphone
+                            </span>
+                            <span class="info-value">${order.client_phone}</span>
+                        </div>
+                        <div class="info-row">
+                            <span class="info-label">
+                                <i class="ti ti-package"></i> Articles
+                            </span>
+                            <span class="info-value">
+                                <span class="badge bg-label-info rounded-pill">${order.items_count}</span>
+                            </span>
+                        </div>
+                        <div class="info-row">
+                            <span class="info-label">
+                                <i class="ti ti-currency-dollar"></i> Total
+                            </span>
+                            <span class="info-value text-success fw-bold">
+                                ${parseFloat(order.total_ttc).toLocaleString('fr-TN', {minimumFractionDigits: 3})} DT
+                            </span>
+                        </div>
+
+                        <!-- Actions -->
+                        <div class="d-flex gap-2 mt-3">
+                            <button class="btn btn-primary action-btn-mobile view-order-mobile" data-order='${JSON.stringify(order).replace(/'/g, "&#39;")}'>
+                                <i class="ti ti-eye"></i> Voir
+                            </button>
+                            <button class="btn btn-info action-btn-mobile edit-status" data-id="${order.id}">
+                                <i class="ti ti-edit"></i>
+                            </button>
+                            <a href="{{ route('commandes.pdf', ':id') }}".replace(':id',${order.id})
+                               target="_blank"
+                               class="btn btn-success action-btn-mobile">
+                                <i class="ti ti-file-download"></i>
+                            </a>
+                            <button class="btn btn-danger action-btn-mobile delete-order" data-id="${order.id}">
+                                <i class="ti ti-trash"></i>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            `;
+        });
+
+        container.html(html);
+        renderMobilePagination();
+    }
+
+    function renderMobilePagination() {
+        const totalPages = Math.ceil(mobileOrders.length / itemsPerPage);
+        const pagination = $('#mobile-pagination ul');
+
+        if (totalPages <= 1) {
+            pagination.html('');
+            return;
+        }
+
+        let html = '';
+
+        // Previous
+        html += `<li class="page-item ${currentPage === 1 ? 'disabled' : ''}">
+            <a class="page-link" href="#" data-page="${currentPage - 1}">‹</a>
+        </li>`;
+
+        // Pages
+        for (let i = 1; i <= totalPages; i++) {
+            if (i === 1 || i === totalPages || (i >= currentPage - 1 && i <= currentPage + 1)) {
+                html += `<li class="page-item ${i === currentPage ? 'active' : ''}">
+                    <a class="page-link" href="#" data-page="${i}">${i}</a>
+                </li>`;
+            } else if (i === currentPage - 2 || i === currentPage + 2) {
+                html += `<li class="page-item disabled"><span class="page-link">...</span></li>`;
+            }
+        }
+
+        // Next
+        html += `<li class="page-item ${currentPage === totalPages ? 'disabled' : ''}">
+            <a class="page-link" href="#" data-page="${currentPage + 1}">›</a>
+        </li>`;
+
+        pagination.html(html);
+    }
+
+    // Pagination click
+    $(document).on('click', '#mobile-pagination .page-link', function(e) {
+        e.preventDefault();
+        const page = $(this).data('page');
+        if (page && page > 0 && page <= Math.ceil(mobileOrders.length / itemsPerPage)) {
+            currentPage = page;
+            renderMobileOrders();
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+    });
+
+    // ============================================
+    // MODAL DÉTAILS (Mobile & Desktop)
+    // ============================================
+    $(document).on('click', '.view-order, .view-order-mobile', function() {
+        const order = $(this).data('order');
+        showOrderDetails(order);
+    });
+
+    function showOrderDetails(order) {
+        $('#modal-order-number').text(order.numero_commande);
+        $('#modal-order-date').text(order.date_full || order.date);
+
+        let itemsHtml = '';
+        if (order.items && order.items.length > 0) {
+            itemsHtml = order.items.map(item => {
+                const imgHtml = item.image
+                    ? `<img src="/storage/${item.image}" class="product-img-mobile" alt="${item.name}">`
+                    : `<div class="product-placeholder-mobile">
+                           <i class="ti ti-package text-white"></i>
+                       </div>`;
+
+                return `
+                    <div class="product-item-mobile">
+                        <div class="d-flex gap-3">
+                            ${imgHtml}
+                            <div class="flex-grow-1">
+                                <h6 class="mb-2">${item.name}</h6>
+                                <div class="d-flex justify-content-between align-items-center">
+                                    <small class="text-muted">Qté: ${item.quantity} × ${parseFloat(item.unit_price).toLocaleString('fr-TN', {minimumFractionDigits: 3})} DT</small>
+                                    <strong class="text-success">${parseFloat(item.subtotal).toLocaleString('fr-TN', {minimumFractionDigits: 3})} DT</strong>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        } else {
+            itemsHtml = '<div class="alert alert-info m-3">Aucun article</div>';
+        }
+
+        const content = `
+            <div class="p-3">
+                <!-- Client -->
+                <div class="mb-3">
+                    <h6 class="fw-bold mb-3"><i class="ti ti-user me-2"></i>Client</h6>
+                    <div class="info-row">
+                        <span class="info-label">Nom</span>
+                        <span class="info-value">${order.client_name}</span>
+                    </div>
+                    <div class="info-row">
+                        <span class="info-label">Téléphone</span>
+                        <span class="info-value">${order.client_phone}</span>
+                    </div>
+                    <div class="info-row">
+                        <span class="info-label">Adresse</span>
+                        <span class="info-value">${order.client_adresse}</span>
+                    </div>
+                </div>
+
+                <!-- Produits -->
+                <div class="mb-3">
+                    <h6 class="fw-bold mb-3"><i class="ti ti-package me-2"></i>Produits (${order.items_count})</h6>
+                    ${itemsHtml}
+                </div>
+
+                <!-- Récapitulatif -->
+                <div class="summary-section">
+                    <h6 class="fw-bold mb-3"><i class="ti ti-calculator me-2"></i>Récapitulatif</h6>
+                    <div class="summary-line">
+                        <span>Sous-total HT</span>
+                        <strong>${parseFloat(order.subtotal_ht).toLocaleString('fr-TN', {minimumFractionDigits: 3})} DT</strong>
+                    </div>
+                    <div class="summary-line">
+                        <span>Frais de livraison</span>
+                        <strong>${parseFloat(order.shipping_cost).toLocaleString('fr-TN', {minimumFractionDigits: 3})} DT</strong>
+                    </div>
+                    <div class="summary-line">
+                        <span class="fw-bold">Total TTC</span>
+                        <strong class="text-success fs-5">${parseFloat(order.total_ttc).toLocaleString('fr-TN', {minimumFractionDigits: 3})} DT</strong>
+                    </div>
+                </div>
+            </div>
+        `;
+
+        $('#orderDetailsContent').html(content);
+        $('#orderDetailsModal').modal('show');
+    }
+
+    // ============================================
+    // HELPER FUNCTIONS
+    // ============================================
+    function getStatusBadge(data) {
+        let badgeClass = getStatusBadgeClass(data);
+        return `<span class="badge ${badgeClass} badge-status">${data}</span>`;
+    }
+
+    function getStatusBadgeClass(data) {
+        let statutLower = data.toLowerCase();
+        if (statutLower.includes('livr')) return 'bg-label-success';
+        if (statutLower.includes('annul')) return 'bg-label-danger';
+        if (statutLower.includes('traitement')) return 'bg-label-warning';
+        if (statutLower.includes('livraison')) return 'bg-label-info';
+        return 'bg-label-secondary';
+    }
+
+    function getActionButtons(full) {
+        return `
+            <div class="d-flex justify-content-center gap-1">
+                <button class="btn btn-sm btn-icon btn-primary view-order"
+                        data-order='${JSON.stringify(full).replace(/'/g, "&#39;")}'
+                        title="Voir">
+                    <i class="ti ti-eye"></i>
+                </button>
+                <button class="btn btn-sm btn-icon btn-info edit-status"
+                        data-id="${full.id}"
+                        title="Modifier">
+                    <i class="ti ti-edit"></i>
+                </button>
+                <a href="{{ route('commandes.pdf', ':id') }}".replace(':id', full.id)
+                   target="_blank"
+                   class="btn btn-sm btn-icon btn-success"
+                   title="PDF">
+                    <i class="ti ti-file-download"></i>
+                </a>
+                <button class="btn btn-sm btn-icon btn-danger delete-order"
+                        data-id="${full.id}"
+                        title="Supprimer">
+                    <i class="ti ti-trash"></i>
+                </button>
+            </div>
+        `;
+    }
+
+    function debounce(func, wait) {
+        let timeout;
+        return function executedFunction(...args) {
+            const later = () => {
+                clearTimeout(timeout);
+                func(...args);
+            };
+            clearTimeout(timeout);
+            timeout = setTimeout(later, wait);
+        };
+    }
+
+    // ============================================
+    // ÉVÉNEMENTS COMMUNS
+    // ============================================
+
+    // Filtre statut
+    $('#statut-filter').on('change', function() {
+        if (isMobile) {
+            currentPage = 1;
+            loadMobileOrders();
+        } else {
+            dtCommande.ajax.reload();
+        }
+    });
+
+    // Modifier statut
+    $(document).on('click', '.edit-status', function() {
+        const id = $(this).data('id');
+        const editUrl = "{{ route('commandes.edit-status', ':id') }}".replace(':id', id);
+
+        $('#updateStatusContent').html('<div class="text-center py-3"><div class="spinner-border spinner-border-sm"></div></div>');
+        $('#updateStatusModal').modal('show');
+
+        $('#updateStatusContent').load(editUrl);
+    });
+
+    // Soumission statut
+    $(document).on('submit', '#updateStatusForm', function(e) {
+        e.preventDefault();
+
+        const submitBtn = $(this).find('button[type="submit"]');
+        submitBtn.prop('disabled', true).html('<span class="spinner-border spinner-border-sm me-1"></span>Enregistrement...');
+
+        $.ajax({
+            url: $(this).attr('action'),
+            type: 'POST',
+            data: $(this).serialize(),
+            success: function(response) {
+                $('#updateStatusModal').modal('hide');
+                if (isMobile) {
+                    loadMobileOrders();
+                } else {
+                    dtCommande.ajax.reload(null, false);
+                }
+                Swal.fire({
+                    icon: 'success',
+                    title: 'Succès!',
+                    text: 'Statut mis à jour',
+                    timer: 2000,
+                    showConfirmButton: false
+                });
+            },
+            error: function(xhr) {
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Erreur',
+                    text: 'Une erreur est survenue'
+                });
+                submitBtn.prop('disabled', false).html('<i class="ti ti-device-floppy me-1"></i> Enregistrer');
+            }
+        });
+    });
+
+    // Supprimer
+    $(document).on('click', '.delete-order', function() {
+        const id = $(this).data('id');
+        const deleteUrl = "{{ route('commandes.destroy', ':id') }}".replace(':id', id);
+
+        Swal.fire({
+            title: 'Êtes-vous sûr?',
+            text: "Cette action est irréversible!",
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonText: 'Oui, supprimer!',
+            cancelButtonText: 'Annuler',
+            customClass: {
+                confirmButton: 'btn btn-danger me-3',
+                cancelButton: 'btn btn-secondary'
+            },
+            buttonsStyling: false
+        }).then((result) => {
+            if (result.isConfirmed) {
+                $.ajax({
+                    url: deleteUrl,
+                    type: 'DELETE',
+                    data: { _token: '{{ csrf_token() }}' },
+                    success: function() {
+                        if (isMobile) {
+                            loadMobileOrders();
+                        } else {
+                            dtCommande.ajax.reload(null, false);
                         }
-                    },
-                    columns: [{
-                            data: ''
-                        },
-                        {
-                            data: 'date'
-                        },
-                        {
-                            data: 'client'
-                        },
-                        {
-                            data: 'subtotal_ht'
-                        },
-                        {
-                            data: 'produits'
-                        },
-                        {
-                            data: 'statut'
-                        },
-                        {
-                            data: ''
-                        }
-                    ],
-                    columnDefs: [{
-                            className: 'control',
-                            orderable: false,
-                            searchable: false,
-                            responsivePriority: 2,
-                            targets: 0,
-                            render: function() {
-                                return '';
-                            }
-                        },
-                        {
-                            targets: 1,
-                            render: function(data, type, full) {
-                                return `<span class="fw-medium text-dark">${full['date']}</span>`;
-                            }
-                        },
-                        {
-                            targets: 2,
-                            render: function(data, type, full) {
-                                return full['client'] && full['client'].trim() !== '' ?
-                                    `<span class="badge bg-primary">${full['client']}</span>` :
-                                    `<span class="badge bg-secondary">Non spécifié</span>`;
-                            }
-                        },
-                        {
-                            targets: 3,
-                            render: function(data, type, full) {
-                                // Sécurise les valeurs numériques
-                                const subtotal = Number(full.subtotal_ht ?? 0);
-                                const shipping = Number(full.shipping_cost ?? 0);
-
-                                // Si aucun montant → badge gris
-                                if (subtotal === 0 && shipping === 0) {
-                                    return '<span class="badge bg-label-secondary">Aucun&nbsp;Total</span>';
-                                }
-
-                                // Total TTC (HT + port)
-                                const total = subtotal + shipping;
-
-                                // Format “fr-TN” avec 3 décimales
-                                const formatted = total.toLocaleString('fr-TN', {
-                                    minimumFractionDigits: 3,
-                                    maximumFractionDigits: 3
-                                });
-
-                                return `<span class="fw-bold text-success fs-tiny">${formatted}&nbsp;DT</span>`;
-                            }
-                        },
-
-                        {
-                            targets: 4,
-                            responsivePriority: 3,
-                            render: function(data, type, full) {
-                                if (!Array.isArray(full.produits) || !full.produits.length) {
-                                    return '<span class="text-muted">–</span>';
-                                }
-                                if (type !== 'display') {
-                                    return full.produits.map(p => `${p.quantity}× ${p.name}`).join(
-                                        ', ');
-                                }
-                                const MAX_VISIBLE = 3;
-                                const visibles = full.produits.slice(0, MAX_VISIBLE);
-                                const restants = full.produits.slice(MAX_VISIBLE);
-                                let html = visibles.map(p =>
-                                    `<span class="badge bg-label-info me-1 mb-1">${p.quantity}× ${p.name}</span>`
-                                ).join('');
-                                if (restants.length) {
-                                    const tooltip = restants.map(p => `${p.quantity}× ${p.name}`)
-                                        .join('\n');
-                                    html += `
-                                        <span class="badge bg-label-secondary me-1 mb-1" title="${tooltip.replace(/"/g,'"')}"
-                                              data-bs-toggle="tooltip" data-bs-placement="top" style="cursor:pointer">
-                                            +${restants.length}
-                                        </span>`;
-                                }
-                                return html;
-                            }
-                        },
-                        {
-                            targets: 5,
-                            render: function(data, type, full) {
-                                let statut = full['statut']?.toLowerCase();
-                                switch (statut) {
-                                    case 'annulé':
-                                        return '<span class="badge bg-label-danger">Annulé</span>';
-                                    case 'livré et payé':
-                                    case 'livrée et payée':
-                                        return '<span class="badge bg-label-success">Livrée et Payée</span>';
-                                    case 'en cours de traitement':
-                                        return '<span class="badge bg-label-warning">En cours de traitement</span>';
-                                    case 'en cours de livraison':
-                                        return '<span class="badge bg-label-info">En cours de livraison</span>';
-                                    default:
-                                        return '<span class="badge bg-label-secondary">Inconnu</span>';
-                                }
-                            }
-                        },
-                        {
-                            targets: -1,
-                            title: 'Actions',
-                            searchable: false,
-                            orderable: false,
-                            render: function(data, type, full) {
-                                var deleteUrl = "{{ route('commandes.destroy', ':id') }}".replace(
-                                    ':id', full.id);
-                                var pdfUrl = "{{ route('commandes.pdf', ':id') }}".replace(':id',
-                                    full.id);
-                                return `
-                                    <div class="d-flex align-items-center gap-2">
-                                        <a href="#" data-id="${full.id}" data-url="${deleteUrl}" class="delete-record btn-action text-danger" title="Supprimer">
-                                            <i class="ti ti-trash ti-sm"></i>
-                                        </a>
-                                        <a href="${pdfUrl}" target="_blank" class="btn-action text-primary" title="Générer PDF">
-                                            <i class="ti ti-file-text ti-sm"></i>
-                                        </a>
-                                        <a href="#" class="edit-record-settings-up btn-action text-info" data-id="${full.id}" title="Modifier Statut">
-                                            <i class="ti ti-settings ti-sm"></i>
-                                        </a>
-                                    </div>`;
-                            }
-                        }
-                    ],
-                    order: [
-                        [1, 'desc']
-                    ],
-                    dom: '<"row mx-2 align-items-center"' +
-                        '<"col-md-6"l>' +
-                        '<"col-md-6"f>' +
-                        '>t' +
-                        '<"row mx-2"' +
-                        '<"col-sm-12 col-md-6"i>' +
-                        '<"col-sm-12 col-md-6"p>' +
-                        '>',
-                    language: {
-                        sEmptyTable: "Aucune donnée disponible dans le tableau",
-                        sInfo: "Affichage de l'élément _START_ à _END_ sur _TOTAL_ éléments",
-                        sInfoEmpty: "Affichage de l'élément 0 à 0 sur 0 élément",
-                        sInfoFiltered: "(filtré à partir de _MAX_ éléments au total)",
-                        sLengthMenu: "Afficher _MENU_ éléments",
-                        sLoadingRecords: "Chargement...",
-                        sProcessing: "Traitement...",
-                        sSearch: "",
-                        sZeroRecords: "Aucun résultat trouvé",
-                        oPaginate: {
-                            sFirst: "Premier",
-                            sLast: "Dernier",
-                            sNext: "Suivant",
-                            sPrevious: "Précédent"
-                        },
-                        searchPlaceholder: "Rechercher une commande..."
-                    },
-                    responsive: {
-                        details: {
-                            display: $.fn.dataTable.Responsive.display.modal({
-                                header: function(row) {
-                                    var data = row.data();
-                                    return 'Détails de la commande';
-                                }
-                            }),
-                            type: 'column',
-                            renderer: function(api, rowIdx, columns) {
-                                var data = $.map(columns, function(col, i) {
-                                    return col.title !== '' ?
-                                        '<tr data-dt-row="' + col.rowIndex +
-                                        '" data-dt-column="' + col.columnIndex + '">' +
-                                        '<td>' + col.title + ':' + '</td> ' +
-                                        '<td>' + col.data + '</td>' +
-                                        '</tr>' : '';
-                                }).join('');
-                                return data ? $('<table class="table"/><tbody />').append(data) : false;
-                            }
-                        }
+                        Swal.fire({
+                            icon: 'success',
+                            title: 'Supprimée!',
+                            timer: 2000,
+                            showConfirmButton: false
+                        });
                     }
                 });
             }
-
-            $('.select2filtre').select2({
-                placeholder: 'Sélectionner un statut',
-                allowClear: true
-            });
-
-            $('select[name="statut"]').on('change', function() {
-                dtCommande.ajax.reload();
-            });
-
-            $(document).on('click', '.edit-record-settings-up', function(e) {
-                e.preventDefault();
-                const id = $(this).data('id');
-                const editUrl = "{{ route('commandes.edit-status', ':id') }}".replace(':id', id);
-
-                $('#bodyContentStatut').load(editUrl, function() {
-                    $("#updateStatusModal").modal('show');
-
-                    $('#updateStatusModal .select2').select2({
-                        dropdownParent: $('#updateStatusModal')
-                    });
-
-                    $('#StatutaddValidationErrors').hide().empty();
-
-                    $('#updateStatusForm').off('submit').on('submit', function(event) {
-                        event.preventDefault();
-                        $.ajax({
-                            url: $(this).attr('action'),
-                            type: "POST",
-                            dataType: "json",
-                            data: $(this).serialize(),
-                            success: function(response) {
-                                $('#updateStatusModal').modal('hide');
-                                dtCommande.ajax.reload();
-                                Swal.fire({
-                                    icon: 'success',
-                                    title: 'Succès',
-                                    text: 'Commande mise à jour avec succès.',
-                                    customClass: {
-                                        confirmButton: 'btn btn-success'
-                                    }
-                                });
-                            },
-                            error: function(xhr) {
-                                $('#StatutaddValidationErrors').empty().show();
-                                if (xhr.responseJSON && xhr.responseJSON
-                                    .errors) {
-                                    $.each(xhr.responseJSON.errors, function(
-                                        key, value) {
-                                        $('#StatutaddValidationErrors')
-                                            .append('<div>' + value +
-                                                '</div>');
-                                    });
-                                } else {
-                                    $('#StatutaddValidationErrors').append(
-                                        '<div>Une erreur est survenue.</div>'
-                                    );
-                                }
-                            }
-                        });
-                    });
-                });
-            });
-
-            dtCommandeTable.on('click', '.delete-record', function() {
-                var row = $(this).closest('tr');
-                var id = $(this).data('id');
-                var url = $(this).data('url');
-                Swal.fire({
-                    title: 'Êtes-vous sûr(e) ?',
-                    text: "Vous ne pourrez pas revenir en arrière !",
-                    icon: 'warning',
-                    showCancelButton: true,
-                    confirmButtonText: 'Oui, supprimez-le !',
-                    cancelButtonText: 'Non, annulez !',
-                    customClass: {
-                        confirmButton: 'btn btn-primary me-3',
-                        cancelButton: 'btn btn-label-secondary'
-                    }
-                }).then((result) => {
-                    if (result.isConfirmed) {
-                        $.ajax({
-                            url: url,
-                            type: "DELETE",
-                            dataType: "json",
-                            data: {
-                                "_token": "{{ csrf_token() }}"
-                            },
-                            success: function() {
-                                dtCommande.row(row).remove().draw();
-                                Swal.fire({
-                                    icon: 'success',
-                                    title: 'Supprimé !',
-                                    text: 'La commande a été supprimée.',
-                                    customClass: {
-                                        confirmButton: 'btn btn-success'
-                                    }
-                                });
-                            },
-                            error: function() {
-                                Swal.fire({
-                                    icon: 'error',
-                                    title: 'Erreur',
-                                    text: 'Impossible de supprimer la commande.',
-                                    customClass: {
-                                        confirmButton: 'btn btn-danger'
-                                    }
-                                });
-                            }
-                        });
-                    }
-                });
-            });
-
-            setTimeout(() => {
-                $('.dataTables_filter .form-control').removeClass('form-control-sm').addClass(
-                    'form-control');
-                $('.dataTables_length .form-select').removeClass('form-select-sm').addClass('form-select');
-            }, 300);
         });
-    </script>
+    });
+});
+</script>
 @endsection

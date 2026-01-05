@@ -5,8 +5,9 @@ namespace App\Http\Controllers;
 use App\Models\Category;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
-use Storage;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
+use Intervention\Image\Laravel\Facades\Image;
 
 class CategoryController extends Controller
 {
@@ -19,19 +20,13 @@ class CategoryController extends Controller
     }
 
     /**
-     * Get categories for DataTables.
-     */
-
-
-    /**
      * Store a new category.
      */
-
     public function store(Request $request)
     {
         // 1. Validate input
         $validator = Validator::make($request->all(), [
-            'image' => 'required|image|mimes:jpeg,png,jpg,gif,svg,webp,avif|max:2048',
+            'image' => 'required|image|',
             'name' => 'required|string|max:255',
             'is_active' => 'required|boolean',
         ]);
@@ -40,13 +35,22 @@ class CategoryController extends Controller
             return response()->json(['errors' => $validator->errors()], 422);
         }
 
-        $data = $validator->validated();          // only validated data
+        $data = $validator->validated();
 
-        // 2. Store the file (public disk points to storage/app/public)
-        $image = $request->file('image');
-        $imageName = time() . '_' . $image->getClientOriginalName(); // Génère un nom unique avec la date
-        $image->move(public_path('storage/categories'), $imageName); // Déplace directement dans public/categories
-        $data['image'] = 'categories/' . $imageName; // Stocke le chemin relatif dans $data
+        // 2. Process and store the image as WebP
+        if ($request->hasFile('image') && $request->file('image')->isValid()) {
+            $file = $request->file('image');
+            $filename = uniqid() . '_' . time() . '.webp';
+            $path = 'categories/' . $filename;
+
+            // Convert to WebP using Intervention Image
+            $image = Image::read($file)->toWebp(80);
+            Storage::disk('public')->put($path, (string) $image);
+
+            $data['image'] = $path; // Store relative path
+        } else {
+            return response()->json(['error' => 'Invalid image file'], 400);
+        }
 
         // 3. Persist the model
         $category = Category::create([
@@ -62,7 +66,6 @@ class CategoryController extends Controller
         ], 201);
     }
 
-
     /**
      * Get a category for editing.
      */
@@ -76,8 +79,9 @@ class CategoryController extends Controller
      */
     public function update(Request $request, Category $category)
     {
+        // 1. Validate input
         $validator = Validator::make($request->all(), [
-            'image' => 'sometimes|image|mimes:jpeg,png,jpg,gif,svg|max:2048',
+            'image' => 'sometimes|image|',
             'name' => 'required|string|max:255',
             'is_active' => 'required|boolean',
         ]);
@@ -86,43 +90,53 @@ class CategoryController extends Controller
             return response()->json(['errors' => $validator->errors()], 422);
         }
 
-        $data = $validator->validated();   // Données sûres
+        $data = $validator->validated();
 
-        // 2. Gestion du fichier image si fourni
-        if ($request->hasFile('image')) {
-            $image = $request->file('image');
-            $imageName = time() . '_' . $image->getClientOriginalName(); // Génère un nom unique avec la date
-            $image->move(public_path('storage/categories'), $imageName); // Déplace directement dans public/categories
-            $data['image'] = 'categories/' . $imageName; // Stocke le chemin relatif dans $data
+        // 2. Process and store the image as WebP if provided
+        if ($request->hasFile('image') && $request->file('image')->isValid()) {
+            // Delete old image if it exists
+            if ($category->image) {
+                Storage::disk('public')->delete($category->image);
+            }
+
+            $file = $request->file('image');
+            $filename = uniqid() . '_' . time() . '.webp';
+            $path = 'categories/' . $filename;
+
+            // Convert to WebP using Intervention Image
+            $image = Image::read($file)->toWebp(80);
+            Storage::disk('public')->put($path, (string) $image);
+
+            $data['image'] = $path; // Store relative path
         }
 
-        // 3. Préparation des champs à mettre à jour
+        // 3. Prepare fields for update
         $updatePayload = [
             'name' => $data['name'],
             'slug' => Str::slug($data['name']),
             'is_active' => (bool) $data['is_active'],
         ];
 
-        // Ajouter la clé 'image' uniquement si elle est dans $data
+        // Add image to payload only if it was uploaded
         if (isset($data['image'])) {
             $updatePayload['image'] = $data['image'];
         }
 
-        // 4. Mise à jour du modèle
+        // 4. Update the model
         $category->update($updatePayload);
 
-        // 5. Réponse JSON
+        // 5. Return response
         return response()->json([
-            'message' => 'Catégorie mise à jour avec succès.',
-            'category' => $category->fresh(),   // renvoie les données à jour
+            'message' => 'Category updated successfully.',
+            'category' => $category->fresh(),
         ]);
     }
+
     /**
      * Delete a category.
      */
     public function destroy(Category $category)
     {
-        // Delete the image file if it exists
         if ($category->image) {
             Storage::disk('public')->delete($category->image);
         }

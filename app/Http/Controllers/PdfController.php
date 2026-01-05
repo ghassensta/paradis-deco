@@ -50,4 +50,5 @@ class PdfController extends Controller
         return response()->json(['error' => 'Failed to generate PDF'], 500);
     }
 }
+
 }

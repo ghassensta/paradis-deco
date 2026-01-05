@@ -23,7 +23,30 @@
                     @csrf
                     @method('PUT')
 
-                    {{-- ----------------   Upload d’images   ---------------- --}}
+                    {{-- ----------------   Image de couverture (image_avant)   ---------------- --}}
+                    <div class="mb-4">
+                        <label class="form-label fw-bold" for="image_avant">
+                            Image de couverture
+                            <span class="fw-normal">(image principale du produit, format WebP recommandé)</span>
+                        </label>
+                        <div class="input-group">
+                            <input type="file" name="image_avant" id="image_avant" class="form-control"
+                                accept="image/*">
+                            <div class="invalid-feedback">Veuillez sélectionner une image valide (JPEG, PNG, JPG, GIF, SVG).</div>
+                        </div>
+                        @if ($product->image_avant)
+                            <div class="mt-2">
+                                <img src="{{ asset('storage/' . $product->image_avant) }}" alt="Cover Image"
+                                    style="max-width: 150px; height: auto;">
+                                <input type="hidden" name="old_image_avant" value="{{ $product->image_avant }}">
+                            </div>
+                        @endif
+                        @error('image_avant')
+                            <div class="text-danger">{{ $message }}</div>
+                        @enderror
+                    </div>
+
+                    {{-- ----------------   Upload d’images multiples (mediaimage)   ---------------- --}}
                     <div class="mb-4">
                         <label class="form-label fw-bold">
                             Images du produit
@@ -76,7 +99,7 @@
                                     multiple="multiple" data-placeholder="Sélectionnez au moins deux catégories" required
                                     style="width: 100%;">
                                     @php
-                                        $selected =$product->category_ids ?? [];
+                                        $selected = $product->category_ids ?? [];
                                     @endphp
                                     @foreach ($categories as $category)
                                         <option value="{{ $category->id }}"
@@ -195,7 +218,6 @@
     </div>
 @endsection
 
-
 {{-- --------------------------------------------------------------------
 |  Scripts spécifiques
 --------------------------------------------------------------------- --}}
@@ -259,7 +281,7 @@
 
                 const myDropzoneMulti = new Dropzone(dropzoneMulti, {
                     url: "#",
-                    paramName: 'file',
+                    paramName: 'mediaimage[]', // Match form field name
                     maxFilesize: 5, // MB
                     parallelUploads: 1,
                     addRemoveLinks: true,
@@ -292,16 +314,20 @@
                         // On remove
                         dz.on("removedfile", function(file) {
                             console.log("File removed:", file);
+                            // Update old_media_images
+                            mediaImagesArray = mediaImagesArray.filter(img => img !== file.name);
+                            document.getElementById('file-input-covert-old').value = JSON.stringify(mediaImagesArray);
                         });
 
                         // Form submission
-                        document.querySelector("#boutiqueForm").addEventListener("click", function() {
+                        document.querySelector("#boutiqueForm").addEventListener("click", function(e) {
+                            e.preventDefault(); // Prevent default button behavior
                             handleFormSubmission(dz);
                         });
                     }
                 });
 
-                // 5) Handle form + files
+                // Handle form + files
                 function handleFormSubmission(dz) {
                     dz.processQueue();
                     submitFormWithFiles(dz.getAcceptedFiles());
@@ -311,14 +337,14 @@
                     const dataTransfer = new DataTransfer();
                     const oldImages = [];
                     files.forEach(file => {
-                        if (file instanceof Blob) {
+                        if (file instanceof File) {
                             dataTransfer.items.add(file);
                         } else {
                             oldImages.push(file.name);
                         }
                     });
                     console.log("file-input-covert-old", oldImages);
-                    document.getElementById("file-input-covert-old").value = oldImages.join(",");
+                    document.getElementById("file-input-covert-old").value = JSON.stringify(oldImages);
                     return dataTransfer.files;
                 }
 
@@ -326,13 +352,11 @@
                     const fileListCovert = fileListFrom(files);
                     const fileInputCovert = document.getElementById('file-input-covert');
                     fileInputCovert.files = fileListCovert;
-                    document.querySelector('#dropzone-multi').submit();
+                    document.getElementById('productForm').submit(); // Submit the form
                 }
             }
-        })();
 
-        $(function() {
-            // Initialise tous les selects .select2
+            // Initialize Select2
             $('.select2').select2({
                 placeholder: function() {
                     return $(this).data('placeholder');
@@ -341,23 +365,21 @@
                 width: 'resolve'
             });
 
-            // Validation à la soumission
-            $('#product-form').on('submit', function(e) {
+            // Form validation for category_ids
+            $('#productForm').on('submit', function(e) {
                 let $select = $('#category_ids');
                 let values = $select.val() || [];
                 if (values.length < 2) {
                     e.preventDefault();
-                    // Affiche l’erreur Bootstrap
                     $select.addClass('is-invalid');
                 }
             });
 
-            // Supprime l’erreur dès qu’on atteint 2 sélections
             $('#category_ids').on('change', function() {
                 if (($(this).val() || []).length >= 2) {
                     $(this).removeClass('is-invalid');
                 }
             });
-        });
+        })();
     </script>
 @endsection

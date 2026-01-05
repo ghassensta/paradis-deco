@@ -25,6 +25,24 @@
                 </div>
             </div>
         </div>
+
+        <!-- Modal for Images -->
+        <div class="modal fade" id="imageModal" tabindex="-1" aria-labelledby="imageModalLabel" aria-hidden="true">
+            <div class="modal-dialog modal-lg">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title" id="imageModalLabel">Images du produit</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                    </div>
+                    <div class="modal-body">
+                        <div id="imageModalContent" class="d-flex flex-wrap gap-2"></div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Fermer</button>
+                    </div>
+                </div>
+            </div>
+        </div>
     </div>
 @endsection
 
@@ -43,6 +61,7 @@
     <script src="{{ asset('assets/vendor/libs/datatables-bs5/datatables-bootstrap5.js') }}"></script>
     <script src="{{ asset('assets/vendor/libs/select2/select2.js') }}"></script>
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script>
         'use strict';
 
@@ -72,30 +91,15 @@
                         d._token = '{{ csrf_token() }}';
                     }
                 },
-                columns: [{
-                        data: null
-                    }, // 0: Responsive control
-                    {
-                        data: 'images'
-                    }, // 1: Images
-                    {
-                        data: 'name'
-                    }, // 2: Name
-                    {
-                        data: 'categories'
-                    }, // 3: Categories
-                    {
-                        data: 'price'
-                    }, // 4: Price
-                    {
-                        data: 'stock'
-                    }, // 5: Stock
-                    {
-                        data: 'is_active'
-                    }, // 6: Status
-                    {
-                        data: null
-                    } // 7: Actions
+                columns: [
+                    { data: null }, // 0: Responsive control
+                    { data: 'image_avant' }, // 1: Images
+                    { data: 'name' }, // 2: Name
+                    { data: 'categories' }, // 3: Categories
+                    { data: 'price' }, // 4: Price
+                    { data: 'stock' }, // 5: Stock
+                    { data: 'is_active' }, // 6: Status
+                    { data: null } // 7: Actions
                 ],
                 columnDefs: [
                     {
@@ -108,32 +112,10 @@
                     {
                         targets: 1,
                         render: (_, __, row) => {
-                            let files = [];
-                            if (Array.isArray(row.images)) {
-                                files = row.images;
-                            } else if (row.images) {
-                                try {
-                                    files = JSON.parse(row.images);
-                                } catch {
-                                    return '-';
-                                }
-                            }
-                            if (!files.length) return '-';
-
-                            const imgs = files.filter(f => /\.(jpe?g|png|gif|webp|bmp|svg)$/i.test(
-                                f));
-                            if (!imgs.length) return '-';
-
                             const base = '{{ asset('storage') }}/';
-                            const thumbs = imgs.slice(0, 4).map(f => `
-                                <a href="${base}${f}" target="_blank" style="flex:0 0 48%;text-align:center">
-                                    <img src="${base}${f}" width="50" height="50" class="img-thumbnail mb-1" loading="lazy">
-                                </a>`).join('');
-                            const more = imgs.length > 4 ?
-                                `<span class="badge bg-primary mt-1">+${imgs.length - 4}</span>` :
-                                '';
-
-                            return `<div style="display:flex;flex-wrap:wrap;gap:4px;max-width:110px">${thumbs}${more}</div>`;
+                            const coverImage = row.image_avant ? `<img src="${base}${row.image_avant}" width="50" height="50" class="img-thumbnail" loading="lazy">` : '-';
+                            const viewAllButton = `<button class="btn btn-sm btn-primary ms-2 view-images" data-images='${JSON.stringify([row.image_avant, ...(row.images || [])])}' data-bs-toggle="modal" data-bs-target="#imageModal">Voir tout</button>`;
+                            return `<div class="d-flex align-items-center">${coverImage}${viewAllButton}</div>`;
                         }
                     },
                     {
@@ -144,43 +126,31 @@
                         targets: 3,
                         render: (data, type, row) => {
                             if (!row.categories || !row.categories.length) return '-';
-
-                            const cats = Array.isArray(row.categories) ? row.categories : [row
-                                .categories
-                            ];
-
+                            const cats = Array.isArray(row.categories) ? row.categories : [row.categories];
                             const badges = [];
                             let charSum = 0;
 
                             for (const cat of cats) {
-                                const safe = $('<div>').text(cat)
-                            .html();
-
+                                const safe = $('<div>').text(cat).html();
                                 if (charSum + safe.length > 50) {
                                     badges.push('<span class="badge bg-secondary">…</span>');
                                     break;
                                 }
-
                                 badges.push(`<span class="badge bg-primary mb-2 me-1">${safe}</span>`);
                                 charSum += safe.length;
                             }
-
                             return badges.join('');
                         }
                     },
-
-                    /* Price */
                     {
                         targets: 4,
                         className: 'text-end',
                         render: (_, __, row) => `${parseFloat(row.price).toFixed(2)} DT`
                     },
-                    /* Stock */
                     {
                         targets: 5,
                         className: 'text-end'
                     },
-                    /* Status */
                     {
                         targets: 6,
                         render: (_, __, row) => {
@@ -188,17 +158,14 @@
                             return `<span class="badge ${statusObj[s].class}">${statusObj[s].title}</span>`;
                         }
                     },
-                    /* Actions */
                     {
                         targets: 7,
                         orderable: false,
                         searchable: false,
                         responsivePriority: 1,
                         render: (_, __, row) => {
-                            const editUrl = "{{ route('produits.edit', ':id') }}".replace(':id',
-                                row.id);
-                            const deleteUrl = "{{ route('produits.destroy', ':id') }}".replace(
-                                ':id', row.id);
+                            const editUrl = "{{ route('produits.edit', ':id') }}".replace(':id', row.id);
+                            const deleteUrl = "{{ route('produits.destroy', ':id') }}".replace(':id', row.id);
                             return `
                                 <div class="d-flex align-items-center">
                                     <a href="${editUrl}" class="text-body me-2" title="Modifier">
@@ -211,9 +178,7 @@
                         }
                     }
                 ],
-                order: [
-                    [2, 'asc']
-                ],
+                order: [[2, 'asc']],
                 buttons: [{
                     text: '<i class="ti ti-plus me-1"></i><span class="d-none d-sm-inline">Ajouter Produit</span>',
                     className: 'btn btn-primary mt-3',
@@ -250,6 +215,27 @@
                 $('.dataTables_filter .form-control').removeClass('form-control-sm');
                 $('.dataTables_length .form-select').removeClass('form-select-sm');
             }, 300);
+
+            /* Handle modal image display */
+            dtPakTable.on('click', '.view-images', function() {
+                const images = JSON.parse($(this).attr('data-images'));
+                const modalContent = $('#imageModalContent');
+                modalContent.empty();
+
+                if (images && images.length) {
+                    images.forEach(image => {
+                        if (image && /\.(jpe?g|png|gif|webp|bmp|svg)$/i.test(image)) {
+                            modalContent.append(`
+                                <a href="{{ asset('storage') }}/${image}" target="_blank">
+                                    <img src="{{ asset('storage') }}/${image}" class="img-fluid mb-2" style="max-width: 200px; height: auto;" loading="lazy">
+                                </a>
+                            `);
+                        }
+                    });
+                } else {
+                    modalContent.append('<p>Aucune image disponible.</p>');
+                }
+            });
 
             /* Delete action */
             dtPakTable.on('click', '.delete-record', function() {
