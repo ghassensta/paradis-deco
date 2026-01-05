@@ -13,7 +13,7 @@
     @yield('meta')
     <script src="https://cdn.tailwindcss.com"></script>
     @yield('css')
-<meta name="google-site-verification" content="google86e093cf9edfd147.html />
+<meta name="google-site-verification" content="XvcyV0f3IMnjIMN1zqCcpVUKjYOShFpheWikB40yCgg" />
 
 @php
     $shippingCost      = (float) ($config->shipping_cost ?? 0);
