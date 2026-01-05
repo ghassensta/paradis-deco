@@ -13,10 +13,14 @@ return new class extends Migration
     {
         Schema::create('categories', function (Blueprint $table) {
            $table->id();
-            $table->string('image'); // Changed from image_url
+            $table->string('image');
             $table->string('name');
             $table->string('slug')->unique();
             $table->boolean('is_active')->default(true);
+             // SEO Meta fields
+            $table->string('meta_title')->nullable();
+            $table->string('meta_keywords')->nullable();
+            $table->text('meta_description')->nullable();
             $table->timestamps();
             $table->softDeletes();                            // pour suppression en douceur
         });

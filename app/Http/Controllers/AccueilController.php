@@ -19,7 +19,7 @@ class AccueilController extends Controller
             ->get();
 
         $latestCategorys = Category::where('is_active', true)->latest()->take(4)->get();
-        
+
         $inspirations = Inspiration::where('is_active', true)->latest()->take(4)->get();
         $testimonials = Avis::where('approved', true)
             ->with('product:id,name')
@@ -165,14 +165,14 @@ class AccueilController extends Controller
     public function CategorieProduits($slug)
     {
         $selectedCategory = Category::where('slug', $slug)->firstOrFail();
-
+        //dd($selectedCategory);
         $products = Product::active()
             ->where(fn($q) => $q->whereJsonContains('category_ids', $selectedCategory->id)
                 ->orWhereJsonContains('category_ids', (string) $selectedCategory->id))
             ->latest()
             ->paginate(12);
 
-        return view('front-office.produit.allproduits', [
+        return view('front-office.categorie.categorieproduits', [
             'products' => $products,
             'categories' => $this->sidebarCategories(),
             'selectedCategory' => $selectedCategory,

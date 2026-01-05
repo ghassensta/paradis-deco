@@ -8,11 +8,12 @@ use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use Intervention\Image\Laravel\Facades\Image;
+use Yajra\DataTables\Facades\DataTables;
 
 class CategoryController extends Controller
 {
     /**
-     * Display the category index view.
+     * Display categories page
      */
     public function index()
     {
@@ -20,120 +21,144 @@ class CategoryController extends Controller
     }
 
     /**
-     * Store a new category.
+     * Data for datatable (server side)
+     */
+    public function get(Request $request)
+    {
+        $query = Category::query();
+
+        return DataTables::of($query)
+            ->addColumn('image', function ($row) {
+                $url = $row->image ? asset('storage/' . $row->image) : asset('images/no-image.png');
+                return '<img src="' . e($url) . '" alt="' . e($row->name) . '" width="50">';
+            })
+            ->addColumn('is_active', function ($row) {
+                $class = $row->is_active ? 'bg-label-success' : 'bg-label-warning';
+                $text  = $row->is_active ? 'Active' : 'Inactive';
+                return '<span class="badge ' . $class . '">' . $text . '</span>';
+            })
+            ->addColumn('image_url', function ($row) {
+                return $row->image ? asset('storage/' . $row->image) : null;
+            })
+            ->rawColumns(['image', 'is_active'])
+            ->make(true);
+    }
+
+    /**
+     * Store a new category
      */
     public function store(Request $request)
     {
-        // 1. Validate input
         $validator = Validator::make($request->all(), [
-            'image' => 'required|image|',
-            'name' => 'required|string|max:255',
-            'is_active' => 'required|boolean',
+            'image'            => 'required|image',
+            'name'             => 'required|string|max:255|unique:categories,name',
+            'is_active'        => 'required|boolean',
+            'meta_title'       => 'nullable|string|max:255',
+            'meta_description' => 'nullable|string|max:500',
+            'meta_keywords'    => 'nullable|string|max:500',
         ]);
 
         if ($validator->fails()) {
-            return response()->json(['errors' => $validator->errors()], 422);
+            return response()->json([
+                'errors' => $validator->errors()
+            ], 422);
         }
 
-        $data = $validator->validated();
+        $validated = $validator->validated();
 
-        // 2. Process and store the image as WebP
-        if ($request->hasFile('image') && $request->file('image')->isValid()) {
-            $file = $request->file('image');
-            $filename = uniqid() . '_' . time() . '.webp';
-            $path = 'categories/' . $filename;
+        // Image Upload
+        $imagePath = null;
 
-            // Convert to WebP using Intervention Image
-            $image = Image::read($file)->toWebp(80);
+        if ($request->hasFile('image')) {
+            $filename = Str::uuid() . '.webp';
+            $path     = 'categories/' . $filename;
+
+            $image = Image::read($request->file('image'))->toWebp(80);
             Storage::disk('public')->put($path, (string) $image);
 
-            $data['image'] = $path; // Store relative path
-        } else {
-            return response()->json(['error' => 'Invalid image file'], 400);
+            $imagePath = $path;
         }
 
-        // 3. Persist the model
         $category = Category::create([
-            'name' => $data['name'],
-            'slug' => Str::slug($data['name']),
-            'image' => $data['image'],
-            'is_active' => (bool) $data['is_active'],
+            'name'             => $validated['name'],
+            'slug'             => Str::slug($validated['name']),
+            'image'            => $imagePath,
+            'is_active'        => (bool) $validated['is_active'],
+            'meta_title'       => $validated['meta_title'] ?? null,
+            'meta_description' => $validated['meta_description'] ?? null,
+            'meta_keywords'    => $validated['meta_keywords'] ?? null,
         ]);
 
         return response()->json([
-            'message' => 'Category created successfully.',
-            'category' => $category,
+            'message'  => 'Catégorie créée avec succès',
+            'category' => $category
         ], 201);
     }
 
     /**
-     * Get a category for editing.
+     * Get category for edit
      */
     public function edit(Category $category)
     {
+        // ajouter l’URL de l’image pour l’aperçu
+        $category->image_url = $category->image ? asset('storage/' . $category->image) : null;
         return response()->json($category);
     }
 
     /**
-     * Update a category.
+     * Update category
      */
     public function update(Request $request, Category $category)
     {
-        // 1. Validate input
         $validator = Validator::make($request->all(), [
-            'image' => 'sometimes|image|',
-            'name' => 'required|string|max:255',
-            'is_active' => 'required|boolean',
+            'image'            => 'nullable|image',
+            'name'             => 'required|string|max:255|unique:categories,name,' . $category->id,
+            'is_active'        => 'required|boolean',
+            'meta_title'       => 'nullable|string|max:255',
+            'meta_description' => 'nullable|string|max:500',
+            'meta_keywords'    => 'nullable|string|max:500',
         ]);
 
         if ($validator->fails()) {
-            return response()->json(['errors' => $validator->errors()], 422);
+            return response()->json([
+                'errors' => $validator->errors()
+            ], 422);
         }
 
-        $data = $validator->validated();
+        $validated = $validator->validated();
 
-        // 2. Process and store the image as WebP if provided
-        if ($request->hasFile('image') && $request->file('image')->isValid()) {
-            // Delete old image if it exists
+        // Image Upload
+        if ($request->hasFile('image')) {
             if ($category->image) {
                 Storage::disk('public')->delete($category->image);
             }
 
-            $file = $request->file('image');
-            $filename = uniqid() . '_' . time() . '.webp';
-            $path = 'categories/' . $filename;
+            $filename = Str::uuid() . '.webp';
+            $path     = 'categories/' . $filename;
 
-            // Convert to WebP using Intervention Image
-            $image = Image::read($file)->toWebp(80);
+            $image = Image::read($request->file('image'))->toWebp(80);
             Storage::disk('public')->put($path, (string) $image);
 
-            $data['image'] = $path; // Store relative path
+            $category->image = $path;
         }
 
-        // 3. Prepare fields for update
-        $updatePayload = [
-            'name' => $data['name'],
-            'slug' => Str::slug($data['name']),
-            'is_active' => (bool) $data['is_active'],
-        ];
+        $category->update([
+            'name'             => $validated['name'],
+            'slug'             => Str::slug($validated['name']),
+            'is_active'        => (bool) $validated['is_active'],
+            'meta_title'       => $validated['meta_title'] ?? null,
+            'meta_description' => $validated['meta_description'] ?? null,
+            'meta_keywords'    => $validated['meta_keywords'] ?? null,
+        ]);
 
-        // Add image to payload only if it was uploaded
-        if (isset($data['image'])) {
-            $updatePayload['image'] = $data['image'];
-        }
-
-        // 4. Update the model
-        $category->update($updatePayload);
-
-        // 5. Return response
         return response()->json([
-            'message' => 'Category updated successfully.',
-            'category' => $category->fresh(),
+            'message'  => 'Catégorie mise à jour avec succès',
+            'category' => $category->fresh()
         ]);
     }
 
     /**
-     * Delete a category.
+     * Delete category
      */
     public function destroy(Category $category)
     {
@@ -142,6 +167,9 @@ class CategoryController extends Controller
         }
 
         $category->delete();
-        return response()->json(['message' => 'Category deleted successfully']);
+
+        return response()->json([
+            'message' => 'Catégorie supprimée avec succès'
+        ]);
     }
 }
