@@ -23,7 +23,7 @@ use Illuminate\Support\Facades\Artisan;
 
 Route::get('/', [AccueilController::class, 'nouveautes'])->name('welcome')->middleware('throttle:60,1');
 
-ute::get('/artisan/clear', function () {
+Route::get('/artisan/clear', function () {
 
     Artisan::call('cache:clear');
     Artisan::call('route:clear');
