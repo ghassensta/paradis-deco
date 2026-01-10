@@ -21,6 +21,16 @@
     $freeShippingLimit = 150;
     $freeShippingJson  = json_encode($freeShippingLimit, JSON_NUMERIC_CHECK);
 @endphp
+
+<!-- Google tag (gtag.js) -->
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-404BKDSJRD"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+
+  gtag('config', 'G-404BKDSJRD');
+</script>
 </head>
 
 <body class="bg-gray-100 font-sans text-gray-800">
