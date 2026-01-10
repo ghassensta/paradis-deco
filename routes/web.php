@@ -18,10 +18,30 @@ use App\Http\Controllers\ProductController;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Auth\ForgotPasswordController;
 use App\Http\Controllers\Auth\ResetPasswordController;
+use Illuminate\Support\Facades\Artisan;
 
 
 Route::get('/', [AccueilController::class, 'nouveautes'])->name('welcome')->middleware('throttle:60,1');
 
+ute::get('/artisan/clear', function () {
+
+    Artisan::call('cache:clear');
+    Artisan::call('route:clear');
+    Artisan::call('config:clear');
+    Artisan::call('view:clear');
+
+    // storage:link (évite erreur si déjà existant)
+    try {
+        Artisan::call('storage:link');
+    } catch (\Exception $e) {
+        // ignore si le lien existe déjà
+    }
+
+    return response()->json([
+        'status' => 'success',
+        'message' => 'Cache, routes, config, views nettoyés + storage link OK'
+    ]);
+});
 Route::get('/article/{slug}', action: [AccueilController::class, 'ProduitShow'])->name('preview-article');
 Route::get('/inspiration/{slug}', action: [AccueilController::class, 'InspirationShow'])->name('preview-inspiration');
 Route::resource('/checkout', CheckoutController::class);
