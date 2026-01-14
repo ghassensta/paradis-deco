@@ -209,26 +209,34 @@
         </div>
 
         <!-- Prix & action -->
-        <div class="flex justify-between items-center mt-auto">
-            <p class="text-black font-bold text-xl" itemprop="offers" itemscope itemtype="http://schema.org/Offer">
-                <span itemprop="price">{{ number_format($item->price, 2) }}</span> DT
-                <meta itemprop="priceCurrency" content="TND">
-            </p>
-            <button aria-label="Ajouter {{ $item->name }} au panier"
-                data-id="{{ $item->id }}" data-name="{{ $item->name }}"
-                data-price="{{ $item->price }}" data-image="{{ asset('storage/' . $item->images[0]) }}"
-                data-stock="{{ $item->stock }}"
-                class="flex items-center gap-2 bg-black hover:bg-gray-800 text-white px-4 py-2 rounded-lg transition transform hover:scale-105"
-                @if ($item->stock == 0) disabled @endif
-                onclick="addToCart(this)">
-                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none"
-                    viewBox="0 0 24 24" stroke="currentColor">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                        d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
-                </svg>
-                Ajouter
-            </button>
-        </div>
+       <div class="flex justify-between items-center mt-auto" itemscope itemtype="http://schema.org/Offer">
+    <!-- Prix -->
+    <p class="text-black font-bold text-xl">
+        <span itemprop="price">{{ number_format($item->price, 2) }}</span> DT
+        <meta itemprop="priceCurrency" content="TND">
+        <meta itemprop="availability" content="{{ $item->stock > 0 ? 'http://schema.org/InStock' : 'http://schema.org/OutOfStock' }}">
+        <link itemprop="url" href="{{ route('product.show', $item->slug) }}">
+    </p>
+
+    <!-- Bouton Ajouter au panier -->
+    <button aria-label="Ajouter {{ $item->name }} au panier"
+        data-id="{{ $item->id }}"
+        data-name="{{ $item->name }}"
+        data-price="{{ $item->price }}"
+        data-image="{{ asset('storage/' . $item->images[0]) }}"
+        data-stock="{{ $item->stock }}"
+        class="flex items-center gap-2 bg-black hover:bg-gray-800 text-white px-4 py-2 rounded-lg transition transform hover:scale-105"
+        @if ($item->stock == 0) disabled @endif
+        onclick="addToCart(this)">
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none"
+            viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+        </svg>
+        Ajouter
+    </button>
+</div>
+
     </div>
 
     <!-- SEO -->
@@ -374,7 +382,7 @@
                             <img src="https://i.pravatar.cc/128?img={{ rand(1, 70) }}" loading="lazy"  alt="{{ $testimonial->name }} | {{ $config->site_name }}"
                                 class="w-8 h-8 rounded-full mr-2">
                             <div>
-                                <h4 class="font-bold">{{ $testimonial->name }}</h4>
+                                <h3 class="font-bold">{{ $testimonial->name }}</h3>
                                 <p class="text-gray-500 text-sm">{{ $testimonial->location ?? 'Non spécifié' }}</p>
                             </div>
                         </div>
