@@ -25,6 +25,34 @@
     <meta property="product:price:amount" content="{{ number_format($product->price, 2) }}">
     <meta property="product:price:currency" content="TND">
     <meta name="twitter:card" content="summary_large_image">
+    <script type="application/ld+json">
+{
+    "@context": "https://schema.org/",
+    "@type": "Product",
+    "name": "{{ $product->name }}",
+    "image": [
+        @foreach ($product->images as $img)
+            "{{ Storage::url($img) }}"@if(!$loop->last),@endif
+        @endforeach
+    ],
+    "description": "{{ Str::limit(strip_tags($product->description), 250) }}",
+    "sku": "{{ $product->sku ?? 'SKU-'+$product->id }}",
+    "offers": {
+        "@type": "Offer",
+        "url": "{{ route('preview-article', $product->slug) }}",
+        "priceCurrency": "TND",
+        "price": "{{ number_format($product->price, 2) }}",
+        "availability": "{{ $product->stock > 0 ? 'https://schema.org/InStock' : 'https://schema.org/OutOfStock' }}",
+        "priceValidUntil": "{{ now()->addYear()->format('Y-m-d') }}"
+    },
+    "aggregateRating": {
+        "@type": "AggregateRating",
+        "ratingValue": "{{ $averageRating ?: 0 }}",
+        "reviewCount": "{{ $totalReviews ?: 0 }}"
+    }
+}
+</script>
+
 @endsection
 
 @section('content')
