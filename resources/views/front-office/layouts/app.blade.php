@@ -248,7 +248,7 @@ document.addEventListener('DOMContentLoaded', () => {
         <div class="flex items-center border-b pb-4 p-2 hover:bg-gray-50 rounded-lg">
             <img src="${i.image}" alt="${i.name}" class="w-16 h-16 object-cover rounded-lg">
             <div class="ml-4 flex-1">
-                <h4 class="font-medium">${i.name}</h4>
+                <span class="font-medium">${i.name}</span>
                 <p class="text-sm text-gray-500">${i.price.toFixed(2)} DT × ${i.quantity}</p>
                 <p class="font-semibold text-gray-600">${line.toFixed(2)} DT</p>
             </div>
@@ -283,7 +283,7 @@ document.addEventListener('DOMContentLoaded', () => {
           <div class="flex items-center space-x-2">
             <img src="${i.image}" alt="${i.name}" class="w-12 h-12 object-cover rounded">
             <div class="flex-1">
-              <h4 class="text-sm font-medium">${i.name}</h4>
+              <span class="text-sm font-medium">${i.name}</span>
               <p class="text-xs text-gray-500">${i.quantity} × ${i.price.toFixed(2)} DT</p>
             </div>
           </div>`).join('');
