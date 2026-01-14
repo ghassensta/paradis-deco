@@ -227,7 +227,7 @@
                         if (image && /\.(jpe?g|png|gif|webp|bmp|svg)$/i.test(image)) {
                             modalContent.append(`
                                 <a href="{{ asset('storage') }}/${image}" target="_blank">
-                                    <img src="{{ asset('storage') }}/${image}" class="img-fluid mb-2" style="max-width: 200px; height: auto;" loading="lazy">
+                                    <img src="{{ asset('storage') }}/${image}" class="img-fluid mb-2" style="max-width: 200px; loading:lazy; height: auto;" loading="lazy">
                                 </a>
                             `);
                         }

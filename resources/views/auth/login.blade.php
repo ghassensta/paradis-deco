@@ -7,7 +7,7 @@
     {{-- Logo --}}
     <div class="text-center mb-4">
       <a href="/">
-        <img src="{{ asset('boutiqueassets/img/logo-image.jpg') }}" alt="Paradis Déco" class="img-fluid" style="height: 4.5rem;">
+        <img src="{{ asset('boutiqueassets/img/logo-image.jpg') }}" loading="lazy" alt="Paradis Déco" class="img-fluid" style="height: 4.5rem;">
       </a>
     </div>
 

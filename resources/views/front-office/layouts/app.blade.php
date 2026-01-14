@@ -246,7 +246,7 @@ document.addEventListener('DOMContentLoaded', () => {
         sub += line;
         return `
         <div class="flex items-center border-b pb-4 p-2 hover:bg-gray-50 rounded-lg">
-            <img src="${i.image}" alt="${i.name}" class="w-16 h-16 object-cover rounded-lg">
+            <img src="${i.image}" alt="${i.name}" loading="lazy" class="w-16 h-16 object-cover rounded-lg">
             <div class="ml-4 flex-1">
                 <span class="font-medium">${i.name}</span>
                 <p class="text-sm text-gray-500">${i.price.toFixed(2)} DT × ${i.quantity}</p>
@@ -281,7 +281,7 @@ document.addEventListener('DOMContentLoaded', () => {
       ? '<div class="py-4 text-center text-sm text-gray-500">Votre panier est vide</div>'
       : cart.map(i=>`
           <div class="flex items-center space-x-2">
-            <img src="${i.image}" alt="${i.name}" class="w-12 h-12 object-cover rounded">
+            <img src="${i.image}" loading="lazy" alt="${i.name}" class="w-12 h-12 object-cover rounded">
             <div class="flex-1">
               <span class="text-sm font-medium">${i.name}</span>
               <p class="text-xs text-gray-500">${i.quantity} × ${i.price.toFixed(2)} DT</p>

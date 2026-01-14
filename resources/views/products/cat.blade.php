@@ -272,7 +272,7 @@
     <header class="header">
         <div class="container">
             <a href="/" class="flex items-center">
-                <img src="{{ asset('assets/img/logo-image.jpg') }}" alt="Paradis Déco" />
+                <img src="{{ asset('assets/img/logo-image.jpg') }}" loading="lazy" alt="Paradis Déco" />
             </a>
             <nav class="hidden md:flex">
                 <a href="/produits">Nos produits</a>
@@ -425,7 +425,7 @@
                     <div class="product-grid">
                         ${data.products.map(product => `
                             <div class="product-card">
-                                <img src="${product.image}" alt="${product.name}">
+                                <img src="${product.image}" loading="lazy" alt="${product.name}">
                                 <div class="content">
                                     <h3>${product.name}</h3>
                                     <p>${product.description}</p>

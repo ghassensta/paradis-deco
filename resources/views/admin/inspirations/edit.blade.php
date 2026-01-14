@@ -30,7 +30,7 @@
                                 <label for="image" class="form-label">Image</label>
                                 @if ($inspiration->image && Storage::disk('public')->exists($inspiration->image))
                                     <div class="mb-2">
-                                        <img src="{{ Storage::url($inspiration->image) }}" alt="{{ $inspiration->title }}" style="max-width: 200px;">
+                                        <img src="{{ Storage::url($inspiration->image) }}" loading="lazy" alt="{{ $inspiration->title }}" style="max-width: 200px;">
                                     </div>
                                 @endif
                                 <input type="file" class="form-control" id="image" name="image" accept="image/*">

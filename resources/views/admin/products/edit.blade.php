@@ -36,7 +36,7 @@
                         </div>
                         @if ($product->image_avant)
                             <div class="mt-2">
-                                <img src="{{ asset('storage/' . $product->image_avant) }}" alt="Cover Image"
+                                <img src="{{ asset('storage/' . $product->image_avant) }}" loading="lazy" alt="Cover Image"
                                     style="max-width: 150px; height: auto;">
                                 <input type="hidden" name="old_image_avant" value="{{ $product->image_avant }}">
                             </div>

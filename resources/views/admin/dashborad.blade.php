@@ -151,7 +151,7 @@
 
                                     <div class="d-flex align-items-center">
                                         <div class="avatar avatar-sm me-3">
-                                            <img src="{{ $firstImage }}" alt="{{ $p->name }}" class="rounded-2"
+                                            <img src="{{ $firstImage }}" loading="lazy" alt="{{ $p->name }}" class="rounded-2"
                                                 width="40" height="40">
                                         </div>
                                         <div>

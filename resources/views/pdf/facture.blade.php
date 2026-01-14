@@ -125,7 +125,7 @@
         <div class="header">
             <div class="company-info">
                 @if (file_exists($data['logo_path']))
-                    <img src="{{ $data['logo_path'] }}" alt="Paradis-Deco Logo">
+                    <img src="{{ $data['logo_path'] }}" loading="lazy" alt="Paradis-Deco Logo">
                 @endif
                 <p><strong>Paradis-Deco</strong></p>
                 <p>Msaken, Sousse, Tunisie</p>

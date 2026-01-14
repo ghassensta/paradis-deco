@@ -72,7 +72,7 @@
                 </div>
                 <div class="flex space-x-3 overflow-x-auto py-2 scrollbar-hide">
                     @foreach ($product->images as $index => $image)
-                        <img src="{{ Storage::url($image) }}" alt="{{ $product->name }} - image {{ $index + 1 }}"
+                        <img src="{{ Storage::url($image) }}" alt="{{ $product->name }} - image {{ $index + 1 }}" loading="lazy"
                             class="w-20 h-20 object-cover rounded-md cursor-pointer border-2 border-transparent hover:border-yellow-600 transform transition-all duration-300 hover:scale-105"
                             data-index="{{ $index }}" />
                     @endforeach
@@ -313,7 +313,7 @@
                             <h4 class="font-semibold mb-1">{{ $review->comment }}</h4>
                             <div class="flex items-center">
                                 <!-- Placeholder image, replace with actual user image if available -->
-                                <img src="https://i.pravatar.cc/128?img={{ rand(1, 70) }}" alt="{{ $review->name }}"
+                                <img src="https://i.pravatar.cc/128?img={{ rand(1, 70) }}" alt="{{ $review->name }}" loading="lazy"
                                     class="w-8 h-8 rounded-full mr-2">
 
                                 <span class="text-sm font-medium">
@@ -796,7 +796,7 @@
                     } else {
                         cartItems.innerHTML = cart.map(item => `
                             <div class="flex items-center p-2 border-b">
-                                <img src="${item.image}" alt="${item.name}" class="w-12 h-12 object-cover rounded-md mr-3">
+                                <img src="${item.image}" alt="${item.name}" loading="lazy" class="w-12 h-12 object-cover rounded-md mr-3">
                                 <div class="flex-1">
                                     <p class="text-sm font-medium">${item.name}</p>
                                     <p class="text-xs text-gray-600">${item.price.toFixed(2)} DT x ${item.quantity}</p>

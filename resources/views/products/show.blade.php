@@ -109,7 +109,7 @@
                                     <div
                                         class="flex-shrink-0 w-24 h-24 border border-gray-200 rounded-md overflow-hidden">
                                         <img src="https://imgs.search.brave.com/JJ72iD38GV95e3eg-Yz6howVFSBX5oYiKbOHtFRSSgc/rs:fit:860:0:0:0/g:ce/aHR0cHM6Ly93d3cu/ZHVyYW5jZS5mci83/NzE4LWhvbWVfZGVm/YXVsdC9ib3VnaWUt/cGFyZnVtZWUtZXVj/YWx5cHR1cy1tZW50/aGUuanBn"
-                                            alt="Bougie Eucalyptus" class="w-full h-full object-center object-cover">
+                                            alt="Bougie Eucalyptus" loading="lazy" class="w-full h-full object-center object-cover">
                                     </div>
                                     <div class="ml-4 flex-1 flex flex-col">
                                         <div>

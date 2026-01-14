@@ -28,7 +28,7 @@
                                 <input type="file" class="form-control" id="site_logo" name="site_logo" accept="image/*">
                                 @if($settings->site_logo ?? null)
                                     <div class="mt-2">
-                                        <img src="{{ asset('storage/' . $settings->site_logo) }}" alt="Logo" style="max-width: 150px;">
+                                        <img src="{{ asset('storage/' . $settings->site_logo) }}" loading="lazy" alt="Logo" style="max-width: 150px;">
                                     </div>
                                 @endif
                                 @error('site_logo')
@@ -134,7 +134,7 @@
                                 <input type="file" class="form-control" id="homepage_banner" name="homepage_banner" accept="image/*">
                                 @if($settings->homepage_banner ?? null)
                                     <div class="mt-2">
-                                        <img src="{{ asset('storage/' . $settings->homepage_banner) }}" alt="Banner" style="max-width: 150px;">
+                                        <img src="{{ asset('storage/' . $settings->homepage_banner) }}" loading="lazy" alt="Banner" style="max-width: 150px;">
                                     </div>
                                 @endif
                                 @error('homepage_banner')
