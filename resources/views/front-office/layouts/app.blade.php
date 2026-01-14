@@ -46,7 +46,7 @@
 
     <!-- Header -->
     <div class="flex justify-between items-center p-6 border-b border-gray-100 bg-gradient-to-r from-[#fffaf0] to-white">
-        <h3 class="text-xl font-bold">Votre Panier</h3>
+        <span class="text-xl font-bold">Votre Panier</span>
         <button id="closeCartOffcanvas"
                 class="p-2 rounded-full text-gray-600 hover:text-[#dfb54e] hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-[#dfb54e]"
                 aria-label="Fermer le panier">

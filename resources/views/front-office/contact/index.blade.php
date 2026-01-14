@@ -35,8 +35,8 @@
 <section class="py-16 bg-gray-50">
     <div class="container mx-auto px-6">
         <div class="text-center mb-12">
-            <h2 class="text-3xl font-bold">Contactez-Nous</h2>
-            <p class="text-gray-600 max-w-2xl mx-auto">Nous sommes à votre écoute pour toute question ou demande d'information.</p>
+            <h1 class="text-3xl font-bold">Contactez-Nous</h1>
+            <h2 class="text-gray-600 max-w-2xl mx-auto">Nous sommes à votre écoute pour toute question ou demande d'information.</h2>
         </div>
 
         <div class="grid grid-cols-1 md:grid-cols-2 gap-12">
