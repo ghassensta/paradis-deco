@@ -376,14 +376,14 @@
                     @if ($item->is_active)
                         <article
                             class="bg-white rounded-xl shadow-md overflow-hidden group hover:shadow-lg transition-all duration-300 transform hover:-translate-y-1 flex flex-col h-full"
-                            itemscope itemtype="http://schema.org/Product">
+                            >
                             <div class="relative overflow-hidden flex-grow">
                                 <a href="{{ route('preview-article', $item->slug) }}" target="_blank"
                                     title="{{ $item->meta_title ?? $item->name }}" class="block h-full">
                                     <img src="{{ asset('storage/' . ($item->image_avant ?? 'default.jpg')) }}"
                                         alt="{{ $item->name }}"
                                         class="h-48 sm:h-56 w-full object-cover group-hover:scale-105 transition-transform duration-500 ease-in-out"
-                                        loading="lazy" itemprop="image" />
+                                        loading="lazy" />
                                 </a>
                                 @if ($item->created_at->diffInDays(now()) < 10)
                                     <div class="absolute top-3 right-3">
@@ -408,13 +408,12 @@
                                 <div class="flex-grow">
                                     <div class="flex justify-between items-start mb-2">
                                         <h3 class="text-lg font-semibold text-gray-800 hover:text-yellow-600 transition-colors line-clamp-2"
-                                            itemprop="name">
+                                            >
                                             <a href="{{ route('preview-article', $item->slug) }}">{{ $item->name }}</a>
                                         </h3>
-                                        <div class="flex items-center ml-2" itemprop="aggregateRating" itemscope
-                                            itemtype="http://schema.org/AggregateRating">
+                                        <div class="flex items-center ml-2" >
                                             <i class="fas fa-star text-yellow-400 text-xs"></i>
-                                            <span class="text-gray-600 text-xs ml-1" itemprop="ratingValue">4.8</span>
+                                            <span class="text-gray-600 text-xs ml-1" >4.8</span>
                                         </div>
                                     </div>
                                     <p class="text-gray-500 text-sm mb-4 line-clamp-2">
@@ -422,10 +421,9 @@
                                 </div>
                                 <div class="mt-auto">
                                     <div class="flex justify-between items-center">
-                                        <p class="text-black font-bold text-lg" itemprop="offers" itemscope
-                                            itemtype="http://schema.org/Offer">
-                                            <span itemprop="price">{{ number_format($item->price, 2) }}</span> DT
-                                            <meta itemprop="priceCurrency" content="TND">
+                                        <p class="text-black font-bold text-lg" >
+                                            <span >{{ number_format($item->price, 2) }}</span> DT
+                                            <meta  content="TND">
                                         </p>
                                         <button aria-label="Ajouter {{ $item->name }} au panier"
                                             data-id="{{ $item->id }}" data-name="{{ $item->name }}"
@@ -444,9 +442,9 @@
                                     </div>
                                 </div>
                             </div>
-                            <meta itemprop="description"
+                            <meta
                                 content="{{ $item->meta_description ?? Str::limit($item->description, 80) }}">
-                            <meta itemprop="url" content="{{ route('preview-article', $item->slug) }}">
+                            <meta  content="{{ route('preview-article', $item->slug) }}">
                         </article>
                     @endif
                 @empty
