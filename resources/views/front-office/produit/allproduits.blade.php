@@ -21,6 +21,41 @@
 <link rel="canonical"           href="{{ url()->current() }}">
 <link rel="alternate"           href="{{ url()->current() }}" hreflang="fr-tn">
 <link rel="alternate"           href="{{ url()->current() }}" hreflang="x-default">
+
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "ItemList",
+  "name": "Liste des produits - Paradis Déco",
+  "description": "Découvrez tous nos produits disponibles sur Paradis Déco.",
+  "url": "{{ url()->current() }}",
+  "numberOfItems": {{ $products->total() }},
+  "itemListElement": [
+    @foreach($products as $key => $prod)
+      {
+        "@type": "ListItem",
+        "position": {{ $loop->index + 1 }},
+        "url": "{{ route('preview-article', $prod->slug) }}",
+        "item": {
+          "@type": "Product",
+          "name": "{{ $prod->name }}",
+          "image": "{{ asset('storage/' . $prod->image_avant) }}",
+          "description": "{{ Str::limit(strip_tags($prod->description), 120) }}",
+          "offers": {
+            "@type": "Offer",
+            "priceCurrency": "TND",
+            "price": "{{ number_format($prod->price, 2, '.', '') }}",
+            "availability": "https://schema.org/{{ $prod->stock > 0 ? 'InStock' : 'OutOfStock' }}",
+            "priceValidUntil": "{{ now()->addYear()->format('Y-m-d') }}",
+            "url": "{{ route('preview-article', $prod->slug) }}"
+          }
+        }
+      }@if(!$loop->last),@endif
+    @endforeach
+  ]
+}
+</script>
+
 @endsection
 
 @section('content')
@@ -229,10 +264,26 @@
 
                                 <!-- Price and Action - Style amélioré -->
                                 <div class="flex justify-between items-center">
-                                    <p class="text-black font-bold text-lg" itemprop="offers" itemscope itemtype="http://schema.org/Offer">
-                                        <span itemprop="price">{{ number_format($product->price, 2) }}</span> DT
-                                        <meta itemprop="priceCurrency" content="TND">
-                                    </p>
+                                   <p class="text-black font-bold text-lg"
+                                            itemprop="offers"
+                                            itemscope
+                                            itemtype="https://schema.org/Offer">
+
+                                                <span itemprop="price">{{ number_format($product->price, 2) }}</span> DT
+
+                                                <meta itemprop="priceCurrency" content="TND">
+
+                                                {{-- disponibilité --}}
+                                                <link itemprop="availability"
+                                                    href="https://schema.org/{{ $product->stock > 0 ? 'InStock' : 'OutOfStock' }}">
+
+                                                {{-- date de validité du prix --}}
+                                                <meta itemprop="priceValidUntil" content="{{ now()->addYear()->format('Y-m-d') }}">
+
+                                                {{-- URL du produit --}}
+                                                <link itemprop="url" href="{{ route('preview-article', $product->slug) }}">
+                                            </p>
+
                                     <button aria-label="Ajouter {{ $product->name }} au panier"
                                         data-id="{{ $product->id }}" data-name="{{ $product->name }}"
                                         data-price="{{ $product->price }}"

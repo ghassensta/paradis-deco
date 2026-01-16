@@ -25,31 +25,42 @@
     <meta property="product:price:amount" content="{{ number_format($product->price, 2) }}">
     <meta property="product:price:currency" content="TND">
     <meta name="twitter:card" content="summary_large_image">
-    <script type="application/ld+json">
+   <script type="application/ld+json">
 {
-    "@context": "https://schema.org/",
-    "@type": "Product",
-    "name": "{{ $product->name }}",
-    "image": [
-        @foreach ($product->images as $img)
-            "{{ Storage::url($img) }}"@if(!$loop->last),@endif
-        @endforeach
-    ],
-    "description": "{{ Str::limit(strip_tags($product->description), 250) }}",
-    "sku": "{{ $product->sku ?? 'SKU-'+$product->id }}",
-    "offers": {
-        "@type": "Offer",
-        "url": "{{ route('preview-article', $product->slug) }}",
-        "priceCurrency": "TND",
-        "price": "{{ number_format($product->price, 2) }}",
-        "availability": "{{ $product->stock > 0 ? 'https://schema.org/InStock' : 'https://schema.org/OutOfStock' }}",
-        "priceValidUntil": "{{ now()->addYear()->format('Y-m-d') }}"
+  "@context": "https://schema.org",
+  "@type": "Product",
+  "name": "{{ $product->name }}",
+  "image": ["{{ Storage::url($product->image_avant) }}"],
+  "description": "{{ Str::limit(strip_tags($product->description), 250) }}",
+  "offers": {
+    "@type": "Offer",
+    "url": "{{ url()->current() }}",
+    "priceCurrency": "TND",
+    "price": "{{ number_format($product->price, 2, '.', '') }}",
+    "availability": "{{ $product->stock > 0 ? 'https://schema.org/InStock' : 'https://schema.org/OutOfStock' }}",
+    "itemCondition": "https://schema.org/NewCondition",
+    "priceValidUntil": "2026-12-31"
+  }
+  @if($totalReviews > 0),
+  "aggregateRating": {
+    "@type": "AggregateRating",
+    "ratingValue": "{{ number_format($averageRating, 1) }}",
+    "reviewCount": "{{ $totalReviews }}"
+  },
+  "review": [{
+    "@type": "Review",
+    "author": {
+      "@type": "Person",
+      "name": "{{ $reviews->first()->name ?? 'Client' }}"
     },
-    "aggregateRating": {
-        "@type": "AggregateRating",
-        "ratingValue": "{{ $averageRating ?: 0 }}",
-        "reviewCount": "{{ $totalReviews ?: 0 }}"
-    }
+    "reviewRating": {
+      "@type": "Rating",
+      "ratingValue": "{{ $reviews->first()->rating }}",
+      "bestRating": "5"
+    },
+    "reviewBody": "{{ Str::limit(strip_tags($reviews->first()->comment), 200) }}"
+  }]
+  @endif
 }
 </script>
 
