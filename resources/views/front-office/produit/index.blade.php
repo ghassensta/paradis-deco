@@ -109,13 +109,34 @@
                         <i class="fas fa-chevron-right text-gray-700"></i>
                     </button>
                 </div>
-                <div class="flex space-x-3 overflow-x-auto py-2 scrollbar-hide">
-                    @foreach ($product->images as $index => $image)
-                        <img src="{{ Storage::url($image) }}" alt="{{ $product->name }} - image {{ $index + 1 }}" loading="lazy"
-                            class="w-20 h-20 object-cover rounded-md cursor-pointer border-2 border-transparent hover:border-yellow-600 transform transition-all duration-300 hover:scale-105"
-                            data-index="{{ $index }}" />
-                    @endforeach
-                </div>
+                @php
+                $images = [];
+                if (!empty($product->images)) {
+                    if (is_array($product->images)) {
+                        $images = $product->images;
+                    } else {
+                        $decoded = json_decode($product->images, true);
+                        if (json_last_error() === JSON_ERROR_NONE) {
+                            $images = $decoded;
+                        }
+                    }
+                }
+            @endphp
+
+            <div class="flex space-x-3 overflow-x-auto py-2 scrollbar-hide">
+                @forelse ($images as $index => $image)
+                    <img src="{{ Storage::url($image) }}"
+                        alt="{{ $product->name }} - image {{ $index + 1 }}"
+                        loading="lazy"
+                        class="w-20 h-20 object-cover rounded-md cursor-pointer border-2 border-transparent hover:border-yellow-600 transform transition-all duration-300 hover:scale-105"
+                        data-index="{{ $index }}" />
+                @empty
+                    <img src="{{ asset('storage/default.jpg') }}"
+                        alt="Image par défaut"
+                        class="w-20 h-20 object-cover rounded-md cursor-pointer border-2 border-transparent hover:border-yellow-600 transform transition-all duration-300 hover:scale-105" />
+                @endforelse
+            </div>
+
             </div>
 
             <!-- Product Info -->
