@@ -99,11 +99,11 @@
                 <span class="text-gray-600">|</span>
                 <a href="" class="text-gray-400 hover:text-white transition text-sm">Professionnels</a>
 
-                <a href="https://webinova.netlify.app/"
+                <a href="https://wisecode.tn"
                     class="ml-4 inline-flex items-center bg-white/10 hover:bg-white/20 text-gray-200 px-3 py-1 rounded-full transition"
-                    target="_blank" rel="noopener" title="Site créé par Webinova">
+                    target="_blank" rel="noopener" title="Site créé par wise-code">
                     <i class="fas fa-rocket mr-2 text-gray-300"></i>
-                    <span class="text-sm">Webinova</span>
+                    <span class="text-sm">wise-code</span>
                 </a>
             </div>
         </div>
