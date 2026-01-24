@@ -10,6 +10,7 @@ use Illuminate\Support\Facades\DB;
 use App\Models\Avis;
 use Illuminate\Support\Facades\Validator;
 use App\Models\Configuration;
+
 class AccueilController extends Controller
 {
     public function nouveautes()
@@ -21,6 +22,7 @@ class AccueilController extends Controller
         $latestCategorys = Category::where('is_active', true)->latest()->take(4)->get();
 
         $inspirations = Inspiration::where('is_active', true)->latest()->take(4)->get();
+
         $testimonials = Avis::where('approved', true)
             ->with('product:id,name')
             ->latest()
@@ -34,7 +36,6 @@ class AccueilController extends Controller
             'testimonials' => $testimonials
         ]);
     }
-
 
     public function InspirationShow($slug)
     {
@@ -53,42 +54,44 @@ class AccueilController extends Controller
 
     public function ProduitShow($slug)
     {
-        $product = Product::where('slug', $slug)->firstOrFail();
+        // Récupérer le produit avec les avis approuvés
+        $product = Product::where('slug', $slug)
+            ->where('is_active', true)
+            ->with(['avis' => function($query) {
+                $query->where('approved', true)->latest();
+            }])
+            ->firstOrFail();
 
+        // Récupérer les avis approuvés
+        $reviews = $product->avis()->where('approved', true)->latest()->get();
+
+        // Calculs pour les avis
+        $totalReviews = $reviews->count();
+        $averageRating = $totalReviews > 0 ? round($reviews->avg('rating'), 1) : 0;
+
+        // Distribution des notes
+        $ratingDistribution = [];
+        for ($i = 5; $i >= 1; $i--) {
+            $count = $reviews->where('rating', $i)->count();
+            $ratingDistribution[$i] = $totalReviews > 0 ? round(($count / $totalReviews) * 100, 1) : 0;
+        }
+
+        // Produits similaires
         $categories = $product->category_ids;
-
         $similarProducts = collect();
 
-        if (is_array($categories) && count($categories)) {
-            $similarProducts = Product::where('id', '!=', $product->id)
+        if (is_array($categories) && count($categories) > 0) {
+            $similarProducts = Product::where('is_active', true)
+                ->where('id', '!=', $product->id)
                 ->where(function ($query) use ($categories) {
                     foreach ($categories as $categoryId) {
                         $query->orWhereJsonContains('category_ids', $categoryId);
                     }
                 })
-                ->take(4)
+                ->inRandomOrder()
+                ->limit(8)
                 ->get();
         }
-
-        // Fetch approved reviews for the product
-        $reviews = Avis::where('product_id', $product->id)
-            ->where('approved', true)
-            ->latest()
-            ->get();
-
-        // Calculate average rating
-        $averageRating = $reviews->avg('rating') ?? 0;
-        $averageRating = number_format($averageRating, 1);
-
-        // Calculate rating distribution
-        $totalReviews = $reviews->count();
-        $ratingDistribution = [
-            5 => $totalReviews > 0 ? ($reviews->where('rating', 5)->count() / $totalReviews) * 100 : 0,
-            4 => $totalReviews > 0 ? ($reviews->where('rating', 4)->count() / $totalReviews) * 100 : 0,
-            3 => $totalReviews > 0 ? ($reviews->where('rating', 3)->count() / $totalReviews) * 100 : 0,
-            2 => $totalReviews > 0 ? ($reviews->where('rating', 2)->count() / $totalReviews) * 100 : 0,
-            1 => $totalReviews > 0 ? ($reviews->where('rating', 1)->count() / $totalReviews) * 100 : 0,
-        ];
 
         return view('front-office.produit.index', [
             'product' => $product,
@@ -121,9 +124,9 @@ class AccueilController extends Controller
             'product_id' => $request->product_id,
             'rating' => $request->rating,
             'comment' => $request->comment,
-            'name' => $request->name ?: 'Anonyme',
+            'name' => $request->name ?: 'Client vérifié',
             'location' => $request->location,
-            'approved' => false, // Pending approval
+            'approved' => false,
         ]);
 
         return response()->json([
@@ -165,7 +168,7 @@ class AccueilController extends Controller
     public function CategorieProduits($slug)
     {
         $selectedCategory = Category::where('slug', $slug)->firstOrFail();
-        //dd($selectedCategory);
+
         $products = Product::active()
             ->where(fn($q) => $q->whereJsonContains('category_ids', $selectedCategory->id)
                 ->orWhereJsonContains('category_ids', (string) $selectedCategory->id))
@@ -180,12 +183,10 @@ class AccueilController extends Controller
         ]);
     }
 
-
-  public function AllInspirations()
+    public function AllInspirations()
     {
         return view('front-office.inspirations.allinspirations', [
             'inspirations' => Inspiration::active()->latest()->paginate(10),
         ]);
     }
-
 }

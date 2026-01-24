@@ -221,7 +221,17 @@
 
     <button aria-label="Ajouter {{ $item->name }} au panier"
         data-id="{{ $item->id }}" data-name="{{ $item->name }}"
-        data-price="{{ $item->price }}" data-image="{{ asset('storage/' . $item->images[0]) }}"
+data-price="{{ $item->price ?? 0 }}"
+data-image="{{
+    isset($item->images[0])
+        ? asset('storage/' . $item->images[0])
+        : (
+            !empty($item->image_avant)
+                ? asset('storage/' . $item->image_avant)
+                : asset('images/default-product.png')
+          )
+}}"
+
         data-stock="{{ $item->stock }}"
         class="flex items-center gap-2 bg-black hover:bg-gray-800 text-white px-4 py-2 rounded-lg transition transform hover:scale-105"
         @if ($item->stock == 0) disabled @endif

@@ -12,6 +12,8 @@ use Intervention\Image\Laravel\Facades\Image;
 
 class ProductController extends Controller
 {
+
+
     public function index()
     {
         return view('admin.products.index');
@@ -97,6 +99,7 @@ class ProductController extends Controller
             'meta_description' => $validated['meta_description'] ?? null,
             'is_active' => $request->boolean('is_active', true),
             'category_ids' => $validated['category_ids'],
+
         ]);
 
         return redirect()->route('produits.index')
@@ -127,6 +130,9 @@ class ProductController extends Controller
             'mediaimage.*' => 'image',
             'old_media_images' => 'nullable|string',
             'is_active' => 'sometimes|boolean',
+              'meta_title' => 'nullable|string|max:255',
+            'meta_keywords' => 'nullable|string|max:255',
+            'meta_description' => 'nullable|string|max:255',
         ];
 
         $validated = $request->validate($rules);
@@ -176,6 +182,9 @@ class ProductController extends Controller
             'description' => $validated['description'],
             'is_active' => $request->boolean('is_active', $product->is_active),
             'category_ids' => $validated['category_ids'],
+               'meta_title' => $validated['meta_title'] ?? null,
+            'meta_keywords' => $validated['meta_keywords'] ?? null,
+            'meta_description' => $validated['meta_description'] ?? null,
         ]);
 
         return redirect()->route('produits.index')

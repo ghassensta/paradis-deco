@@ -7,9 +7,7 @@ use Illuminate\Database\Eloquent\Model;
 class Product extends Model
 {
     protected $table = "products";
-    /**
-     * Les attributs modifiables en masse.
-     */
+
     protected $fillable = [
         'category_ids',
         'image_avant',
@@ -20,43 +18,62 @@ class Product extends Model
         'price',
         'stock',
         'is_active',
-        // Champs SEO
         'meta_title',
         'meta_description',
         'meta_keywords',
         'og_image',
     ];
 
-    /**
-     * Casts des attributs.
-     */
     protected $casts = [
         'images' => 'array',
         'category_ids' => 'array',
-        'price' => 'decimal:3',  // Changé à 3 décimales pour cohérence avec DT
+        'price' => 'decimal:3',
         'stock' => 'integer',
         'is_active' => 'boolean',
     ];
 
-    /**
-     * Utiliser le slug pour le Route Model Binding.
-     */
     public function getRouteKeyName(): string
     {
         return 'slug';
     }
 
-    /**
-     * Scope pour ne récupérer que les produits actifs.
-     */
     public function scopeActive($query)
     {
         return $query->where('is_active', true);
     }
 
-    public function avis(){
-
-        return $this->hasMany(Avis::class,'product_id','id');
+    public function avis()
+    {
+        return $this->hasMany(Avis::class, 'product_id', 'id');
     }
 
+    /**
+     * Obtenir la note moyenne des avis approuvés.
+     */
+    public function getAverageRatingAttribute()
+    {
+        $approvedReviews = $this->avis()->where('approved', true)->get();
+
+        if ($approvedReviews->isEmpty()) {
+            return 5.0; // Note par défaut
+        }
+
+        return round($approvedReviews->avg('rating'), 1);
+    }
+
+    /**
+     * Obtenir le nombre total d'avis approuvés.
+     */
+    public function getTotalReviewsAttribute()
+    {
+        return $this->avis()->where('approved', true)->count();
+    }
+
+    /**
+     * Vérifier si le produit a des avis.
+     */
+    public function hasReviews()
+    {
+        return $this->total_reviews > 0;
+    }
 }
