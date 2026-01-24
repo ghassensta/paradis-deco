@@ -49,6 +49,7 @@
     @else
         <meta name="twitter:image" content="{{ asset('images/default-og.jpg') }}">
     @endif
+    
 @endsection
 
 @section('content')
@@ -205,77 +206,118 @@
                     </div>
 
                     <div class="grid grid-cols-1 xs:grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 sm:gap-6">
-                        @forelse($products as $product)
-                            <article class="bg-white rounded-xl overflow-hidden group transition-all duration-300 hover:shadow-lg border border-gray-100 hover:border-gray-200" itemscope itemtype="http://schema.org/Product">
-                                <div class="relative overflow-hidden aspect-square">
-                                    <a href="{{ route('preview-article', $product->slug) }}" class="block h-full">
-                                        <img src="{{ asset('storage/' . ($product->images[0] ?? 'default.jpg')) }}"
-                                             alt="{{ $product->name }}"
-                                             class="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
-                                             loading="lazy"/>
-                                    </a>
-                                    @if($product->created_at->diffInDays(now()) < 10)
-                                        <span class="absolute top-2 right-2 bg-[#228B22] text-white text-xs font-semibold px-2 py-1 rounded-full uppercase shadow-sm">Nouveau</span>
-                                    @endif
-                                    @if ($product->stock <= 5 && $product->stock > 0)
-                                        <span class="absolute top-2 left-2 bg-white text-red-500 text-xs font-semibold px-2 py-1 rounded-lg uppercase shadow-sm">Stock faible</span>
-                                    @elseif ($product->stock === 0)
-                                        <span class="absolute top-2 left-2 bg-white text-gray-700 font-semibold text-xs px-2 py-1 rounded-lg uppercase shadow-sm">Épuisé</span>
-                                    @endif
-                                </div>
+                       @forelse($products as $product)
+    <article class="bg-white rounded-xl overflow-hidden group transition-all duration-300 hover:shadow-lg border border-gray-100 hover:border-gray-200">
+        <div class="relative overflow-hidden aspect-square">
+            <a href="{{ route('preview-article', $product->slug) }}" class="block h-full">
+                <img src="{{ asset('storage/' . ($product->images[0] ?? $product->image_avant ?? 'default.jpg')) }}"
+                     alt="{{ $product->name }}"
+                     class="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
+                     loading="lazy"/>
+            </a>
+            @if($product->created_at->diffInDays(now()) < 10)
+                <span class="absolute top-2 right-2 bg-[#228B22] text-white text-xs font-semibold px-2 py-1 rounded-full uppercase shadow-sm">Nouveau</span>
+            @endif
+            @if ($product->stock <= 5 && $product->stock > 0)
+                <span class="absolute top-2 left-2 bg-white text-red-500 text-xs font-semibold px-2 py-1 rounded-lg uppercase shadow-sm">Stock faible</span>
+            @elseif ($product->stock === 0)
+                <span class="absolute top-2 left-2 bg-white text-gray-700 font-semibold text-xs px-2 py-1 rounded-lg uppercase shadow-sm">Épuisé</span>
+            @endif
+        </div>
 
-                                <div class="p-4">
-                                    <h3 class="text-base font-semibold text-gray-900 hover:text-[#dfb54e] transition-colors mb-1 line-clamp-2">
-                                        <a href="{{ route('preview-article', $product->slug) }}">{{ $product->name }}</a>
-                                    </h3>
-                                    <p class="text-gray-600 text-xs sm:text-sm line-clamp-2 mb-2">
-                                        {{ Str::limit($product->description, 80) }}
-                                    </p>
-                                    <div class="flex items-center mb-2">
-                                        <svg class="w-4 h-4 text-yellow-400 mr-1" fill="currentColor" viewBox="0 0 20 20">
-                                            <path d="M9.049 2.927c.3-.921 1.59-.921 1.89 0l1.59 3.18a1 0 00.89.67h3.43c.98 0 1.39 1.25.6 1.82l-2.78 2.02a1 0 00-.34 1.13l1.06 3.19c.3.91-.76 1.67-1.54 1.1l-2.78-2.02a1 0 00-1.16 0l-2.78 2.02c-.78.57-1.84-.19-1.54-1.1l1.06-3.19a1 0 00-.34-1.13L2.49 8.79c-.79-.57-.38-1.82.6-1.82h3.43a1 0 00.89-.67l1.59-3.18z"></path>
-                                        </svg>
-                                        <span class="text-xs font-medium text-gray-600">4.8</span>
-                                    </div>
-                                    <div class="flex justify-between items-center">
-                                        <p class="text-black font-bold text-lg">
-                                            {{ number_format($product->price, 2) }} DT
-                                        </p>
-                                        <button aria-label="Ajouter {{ $product->name }} au panier"
-                                                data-id="{{ $product->id }}"
-                                                data-name="{{ $product->name }}"
-                                                data-price="{{ $product->price }}"
-                                                data-image="{{ asset('storage/' . ($product->images[0] ?? 'default.jpg')) }}"
-                                                data-stock="{{ $product->stock }}"
-                                                class="flex items-center justify-center gap-1 bg-[#dfb54e] hover:bg-[#cba640] text-white p-2 rounded-lg transition-all duration-300 {{ $product->stock == 0 ? 'opacity-50 cursor-not-allowed' : '' }}"
-                                                {{ $product->stock == 0 ? 'disabled' : '' }}
-                                                onclick="addToCart(this)">
-                                            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"/>
-                                            </svg>
-                                        </button>
-                                    </div>
-                                </div>
-                            </article>
-                        @empty
-                            <div class="col-span-full text-center py-12">
-                                <svg xmlns="http://www.w3.org/2000/svg"
-                                     class="h-16 w-16 mx-auto text-gray-300 mb-4" fill="none" viewBox="0 0 24 24"
-                                     stroke="currentColor">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"
-                                          d="M9.172 16.172a4 4 0 015.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
-                                </svg>
-                                <h3 class="text-xl font-medium text-gray-700 mb-2">Aucun produit trouvé</h3>
-                                <p class="text-gray-500 mb-6">
-                                    Aucun produit disponible dans « {{ $selectedCategory->name ?? 'cette catégorie' }} ».
-                                    Essayez de modifier vos critères de recherche.
-                                </p>
-                                <a href="{{ route('allproduits') }}"
-                                   class="inline-block px-6 py-2 bg-[#dfb54e] text-white rounded-lg hover:bg-[#cba640] transition font-medium">
-                                    Voir tous les produits
-                                </a>
-                            </div>
-                        @endforelse
+        <div class="p-4">
+            <h3 class="text-base font-semibold text-gray-900 hover:text-[#dfb54e] transition-colors mb-1 line-clamp-2">
+                <a href="{{ route('preview-article', $product->slug) }}">{{ $product->name }}</a>
+            </h3>
+            <p class="text-gray-600 text-xs sm:text-sm line-clamp-2 mb-2">
+                {{ Str::limit($product->description, 80) }}
+            </p>
+            <div class="flex items-center mb-2">
+                <svg class="w-4 h-4 text-yellow-400 mr-1" fill="currentColor" viewBox="0 0 20 20">
+                    <path d="M9.049 2.927c.3-.921 1.59-.921 1.89 0l1.59 3.18a1 0 00.89.67h3.43c.98 0 1.39 1.25.6 1.82l-2.78 2.02a1 0 00-.34 1.13l1.06 3.19c.3.91-.76 1.67-1.54 1.1l-2.78-2.02a1 0 00-1.16 0l-2.78 2.02c-.78.57-1.84-.19-1.54-1.1l1.06-3.19a1 0 00-.34-1.13L2.49 8.79c-.79-.57-.38-1.82.6-1.82h3.43a1 0 00.89-.67l1.59-3.18z"></path>
+                </svg>
+                <span class="text-xs font-medium text-gray-600">
+                    {{ $product->avis()->where('approved', true)->count() > 0
+                        ? number_format($product->avis()->where('approved', true)->avg('rating'), 1)
+                        : '5.0' }}
+                </span>
+            </div>
+            <div class="flex justify-between items-center">
+                <p class="text-black font-bold text-lg">
+                    {{ number_format($product->price, 2) }} DT
+                </p>
+                <button aria-label="Ajouter {{ $product->name }} au panier"
+                        data-id="{{ $product->id }}"
+                        data-name="{{ $product->name }}"
+                        data-price="{{ $product->price }}"
+                        data-image="{{ asset('storage/' . ($product->images[0] ?? $product->image_avant ?? 'default.jpg')) }}"
+                        data-stock="{{ $product->stock }}"
+                        class="flex items-center justify-center gap-1 bg-[#dfb54e] hover:bg-[#cba640] text-white p-2 rounded-lg transition-all duration-300 {{ $product->stock == 0 ? 'opacity-50 cursor-not-allowed' : '' }}"
+                        {{ $product->stock == 0 ? 'disabled' : '' }}
+                        onclick="addToCart(this)">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"/>
+                    </svg>
+                </button>
+            </div>
+        </div>
+
+        <!-- SCHEMA.ORG JSON-LD STRUCTURÉ -->
+        <script type="application/ld+json">
+        {
+          "@context": "https://schema.org",
+          "@type": "Product",
+          "name": "{{ $product->name }}",
+          "image": "{{ asset('storage/' . ($product->images[0] ?? $product->image_avant ?? 'default.jpg')) }}",
+          "description": "{{ Str::limit(strip_tags($product->description), 160) }}",
+          "sku": "PROD-{{ $product->id }}",
+          "brand": {
+            "@type": "Brand",
+            "name": "{{ config('app.name', 'Paradis Déco') }}"
+          },
+          "offers": {
+            "@type": "Offer",
+            "url": "{{ route('preview-article', $product->slug) }}",
+            "priceCurrency": "TND",
+            "price": "{{ number_format($product->price, 2, '.', '') }}",
+            "availability": "{{ $product->stock > 0 ? 'https://schema.org/InStock' : 'https://schema.org/OutOfStock' }}",
+            "itemCondition": "https://schema.org/NewCondition",
+            "priceValidUntil": "{{ now()->addYear()->format('Y-m-d') }}",
+            "seller": {
+              "@type": "Organization",
+              "name": "{{ config('app.name', 'Paradis Déco') }}"
+            }
+          }@if($product->avis()->where('approved', true)->exists()),
+          "aggregateRating": {
+            "@type": "AggregateRating",
+            "ratingValue": "{{ number_format($product->avis()->where('approved', true)->avg('rating'), 1) }}",
+            "reviewCount": "{{ $product->avis()->where('approved', true)->count() }}",
+            "bestRating": "5",
+            "worstRating": "1"
+          }
+          @endif
+        }
+        </script>
+    </article>
+@empty
+    <div class="col-span-full text-center py-12">
+        <svg xmlns="http://www.w3.org/2000/svg"
+             class="h-16 w-16 mx-auto text-gray-300 mb-4" fill="none" viewBox="0 0 24 24"
+             stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"
+                  d="M9.172 16.172a4 4 0 015.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+        </svg>
+        <h3 class="text-xl font-medium text-gray-700 mb-2">Aucun produit trouvé</h3>
+        <p class="text-gray-500 mb-6">
+            Aucun produit disponible dans « {{ $selectedCategory->name ?? 'cette catégorie' }} ».
+            Essayez de modifier vos critères de recherche.
+        </p>
+        <a href="{{ route('allproduits') }}"
+           class="inline-block px-6 py-2 bg-[#dfb54e] text-white rounded-lg hover:bg-[#cba640] transition font-medium">
+            Voir tous les produits
+        </a>
+    </div>
+@endforelse
                     </div>
 
                     @if($products->hasPages())

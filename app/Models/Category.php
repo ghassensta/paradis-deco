@@ -87,4 +87,31 @@ class Category extends Model
         return $this->meta_description
             ?: Str::limit(strip_tags($this->name), 160);
     }
+
+      public function getAverageRatingAttribute()
+    {
+        $approvedReviews = $this->avis()->where('approved', true)->get();
+
+        if ($approvedReviews->isEmpty()) {
+            return 5.0; // Note par défaut
+        }
+
+        return round($approvedReviews->avg('rating'), 1);
+    }
+
+    /**
+     * Obtenir le nombre total d'avis approuvés.
+     */
+    public function getTotalReviewsAttribute()
+    {
+        return $this->avis()->where('approved', true)->count();
+    }
+
+    /**
+     * Vérifier si le produit a des avis.
+     */
+    public function hasReviews()
+    {
+        return $this->total_reviews > 0;
+    }
 }
