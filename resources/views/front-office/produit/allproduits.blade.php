@@ -26,35 +26,65 @@
 {
   "@context": "https://schema.org",
   "@type": "ItemList",
-  "name": "Liste des produits - Paradis Déco",
-  "description": "Découvrez tous nos produits disponibles sur Paradis Déco.",
+  "name": "Tous les produits – Paradis Déco",
+  "description": "Découvrez tous les produits déco disponibles sur Paradis Déco : meubles, luminaires et accessoires en Tunisie.",
   "url": "{{ url()->current() }}",
   "numberOfItems": {{ $products->total() }},
   "itemListElement": [
-    @foreach($products as $key => $prod)
-      {
-        "@type": "ListItem",
-        "position": {{ $loop->index + 1 }},
-        "url": "{{ route('preview-article', $prod->slug) }}",
-        "item": {
-          "@type": "Product",
-          "name": "{{ $prod->name }}",
-          "image": "{{ asset('storage/' . $prod->image_avant) }}",
-          "description": "{{ Str::limit(strip_tags($prod->description), 120) }}",
-          "offers": {
-            "@type": "Offer",
-            "priceCurrency": "TND",
-            "price": "{{ number_format($prod->price, 2, '.', '') }}",
-            "availability": "https://schema.org/{{ $prod->stock > 0 ? 'InStock' : 'OutOfStock' }}",
-            "priceValidUntil": "{{ now()->addYear()->format('Y-m-d') }}",
-            "url": "{{ route('preview-article', $prod->slug) }}"
+    @foreach($products as $index => $product)
+    {
+      "@type": "ListItem",
+      "position": {{ $index + 1 }},
+      "url": "{{ route('preview-article', $product->slug) }}",
+      "item": {
+        "@type": "Product",
+        "@id": "{{ route('preview-article', $product->slug) }}",
+        "name": "{{ $product->name }}",
+        "description": "{{ Str::limit(strip_tags($product->description), 160) }}",
+        "image": [
+          "{{ asset('storage/' . $product->image_avant) }}"
+        ],
+        "sku": "{{ $product->sku ?? $product->id }}",
+        "brand": {
+          "@type": "Brand",
+          "name": "Paradis Déco"
+        },
+        "offers": {
+          "@type": "Offer",
+          "url": "{{ route('preview-article', $product->slug) }}",
+          "priceCurrency": "TND",
+          "price": "{{ number_format($product->price, 2, '.', '') }}",
+          "availability": "https://schema.org/{{ $product->stock > 0 ? 'InStock' : 'OutOfStock' }}",
+          "priceValidUntil": "{{ now()->addYear()->format('Y-m-d') }}",
+
+          "hasMerchantReturnPolicy": {
+            "@type": "MerchantReturnPolicy",
+            "returnPolicyCategory": "https://schema.org/MerchantReturnFiniteReturnWindow",
+            "merchantReturnDays": 30,
+            "returnMethod": "https://schema.org/ReturnInStore",
+            "returnFees": "https://schema.org/FreeReturn"
+          },
+
+          "shippingDetails": {
+            "@type": "OfferShippingDetails",
+            "shippingRate": {
+              "@type": "MonetaryAmount",
+              "value": 7,
+              "currency": "TND"
+            },
+            "shippingDestination": {
+              "@type": "DefinedRegion",
+              "addressCountry": "TN"
+            }
           }
         }
-      }@if(!$loop->last),@endif
+      }
+    }@if(!$loop->last),@endif
     @endforeach
   ]
 }
 </script>
+
 
 @endsection
 
