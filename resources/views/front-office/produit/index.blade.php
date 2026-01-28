@@ -38,33 +38,33 @@
     "name": "{{ config('app.name', 'ParaDéco') }}"
   },
   "offers": {
-  "@type": "Offer",
-  "url": "{{ url()->current() }}",
-  "priceCurrency": "TND",
-  "price": "{{ number_format($product->price, 2, '.', '') }}",
-  "availability": "{{ $product->stock > 0 ? 'https://schema.org/InStock' : 'https://schema.org/OutOfStock' }}",
-  "itemCondition": "https://schema.org/NewCondition",
-  "priceValidUntil": "2026-12-31",
-  "seller": {
-    "@type": "Organization",
-    "name": "{{ config('app.name', 'ParaDéco') }}"
+    "@type": "Offer",
+    "url": "{{ url()->current() }}",
+    "priceCurrency": "TND",
+    "price": "{{ number_format($product->price, 2, '.', '') }}",
+    "availability": "{{ $product->stock > 0 ? 'https://schema.org/InStock' : 'https://schema.org/OutOfStock' }}",
+    "itemCondition": "https://schema.org/NewCondition",
+    "priceValidUntil": "2026-12-31",
+    "seller": {
+      "@type": "Organization",
+      "name": "{{ config('app.name', 'ParaDéco') }}"
+    },
+    "hasMerchantReturnPolicy": {
+      "@type": "MerchantReturnPolicy",
+      "returnPolicyCategory": "https://schema.org/MerchantReturnFiniteReturnWindow",
+      "merchantReturnDays": 14,
+      "returnMethod": "https://schema.org/ReturnByMail",
+      "returnFees": "https://schema.org/FreeReturn"
+    }
   },
-  "hasMerchantReturnPolicy": {
-    "@type": "MerchantReturnPolicy",
-    "returnPolicyCategory": "https://schema.org/MerchantReturnFiniteReturnWindow",
-    "merchantReturnDays": 14,
-    "returnMethod": "https://schema.org/ReturnByMail",
-    "returnFees": "https://schema.org/FreeReturn"
-  }
-},
-
   "aggregateRating": {
     "@type": "AggregateRating",
     "ratingValue": "{{ $totalReviews > 0 ? number_format($averageRating, 1) : '5.0' }}",
     "reviewCount": "{{ $totalReviews > 0 ? $totalReviews : 1 }}",
     "bestRating": "5",
     "worstRating": "1"
-  }@if($totalReviews > 0),
+  }
+  @if($totalReviews > 0),
   "review": [
     @foreach($reviews->take(5) as $review)
     {
@@ -87,6 +87,7 @@
   @endif
 }
 </script>
+
 @endsection
 
 @section('content')
