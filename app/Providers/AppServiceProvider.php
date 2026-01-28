@@ -22,7 +22,7 @@ class AppServiceProvider extends ServiceProvider
     {
         view()->composer('*', function ($view) {
             $config=Configuration::first();
-            //dd($config);
+           // dd($config);
             $view->with(['config'=>$config]);
         });
     }

@@ -53,6 +53,7 @@
     <meta name="twitter:title" content="Paradis Déco – Sublimez votre intérieur">
     <meta name="twitter:description" content="Boutique déco en ligne n°1 en Tunisie. Livraison rapide.">
     <meta name="twitter:image" content="{{ $ogImage }}">
+
 @endsection
 
 @section('content')
@@ -157,84 +158,84 @@
                             @if ($item->is_active)
                                 <div class="swiper-slide">
                                     <!-- CARTE PRODUIT -->
-                                 <!-- CARTE PRODUIT -->
-<article itemscope itemtype="https://schema.org/Product" class="bg-white rounded-2xl shadow-lg overflow-hidden group hover:shadow-xl transition-all duration-300 hover:-translate-y-1 h-[460px] flex flex-col justify-between">
-    <!-- Image -->
-    <div class="relative h-64 overflow-hidden flex items-center justify-center bg-gray-100">
-        <a href="{{ route('preview-article', $item->slug) }}" title="{{ $item->meta_title ?? $item->name }}" class="block w-full h-full">
-            <img itemprop="image"
-                 src="{{ asset('storage/' . $item->image_avant) }}"
-                 alt="{{ $item->name }}"
-                 class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-                 loading="lazy">
-        </a>
+                <article itemscope itemtype="https://schema.org/Product" class="bg-white rounded-2xl shadow-lg overflow-hidden group hover:shadow-xl transition-all duration-300 hover:-translate-y-1 h-[460px] flex flex-col justify-between">
+                    <!-- Image -->
+                    <div class="relative h-64 overflow-hidden flex items-center justify-center bg-gray-100">
+                        <a href="{{ route('preview-article', $item->slug) }}" title="{{ $item->meta_title ?? $item->name }}" class="block w-full h-full">
+                            <img itemprop="image"
+                                src="{{ asset('storage/' . $item->image_avant) }}"
+                                alt="{{ $item->name }}"
+                                class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                                loading="lazy">
+                        </a>
 
-        <!-- Badges -->
-        <div class="absolute top-4 right-4">
-            <span class="bg-[#228B22] text-white text-xs font-semibold px-3 py-1 rounded-full uppercase">Nouveau</span>
-        </div>
+                        <!-- Badges -->
+                        <div class="absolute top-4 right-4">
+                            <span class="bg-[#228B22] text-white text-xs font-semibold px-3 py-1 rounded-full uppercase">Nouveau</span>
+                        </div>
 
-        @if ($item->stock <= 5 && $item->stock > 0)
-            <div class="absolute top-4 left-4">
-                <span class="bg-red-500 text-white text-xs font-semibold px-3 py-1 rounded-full uppercase">Stock faible</span>
-            </div>
-        @elseif ($item->stock == 0)
-            <div class="absolute top-4 left-4">
-                <span class="bg-gray-600 text-white text-xs font-semibold px-3 py-1 rounded-full uppercase">Épuisé</span>
-            </div>
-        @endif
-    </div>
+                        @if ($item->stock <= 5 && $item->stock > 0)
+                            <div class="absolute top-4 left-4">
+                                <span class="bg-red-500 text-white text-xs font-semibold px-3 py-1 rounded-full uppercase">Stock faible</span>
+                            </div>
+                        @elseif ($item->stock == 0)
+                            <div class="absolute top-4 left-4">
+                                <span class="bg-gray-600 text-white text-xs font-semibold px-3 py-1 rounded-full uppercase">Épuisé</span>
+                            </div>
+                        @endif
+                    </div>
 
-    <!-- Contenu -->
-    <div class="p-5 flex-1 flex flex-col justify-between">
-        <div class="mb-4">
-            <h3 class="text-lg font-semibold text-gray-800 hover:text-yellow-600 transition-colors line-clamp-1">
-                <a href="{{ route('preview-article', $item->slug) }}" itemprop="url">
-                    <span itemprop="name">{{ Str::limit($item->name, 50) }}</span>
-                </a>
-            </h3>
-            <p itemprop="description" class="text-gray-500 text-sm mt-1 line-clamp-2">
-                {{ Str::limit(strip_tags($item->description), 80) }}
-            </p>
-        </div>
+                    <!-- Contenu -->
+                    <div class="p-5 flex-1 flex flex-col justify-between">
+                        <div class="mb-4">
+                            <h3 class="text-lg font-semibold text-gray-800 hover:text-yellow-600 transition-colors line-clamp-1">
+                                <a href="{{ route('preview-article', $item->slug) }}" itemprop="url">
+                                    <span itemprop="name">{{ Str::limit($item->name, 50) }}</span>
+                                </a>
+                            </h3>
+                            <p itemprop="description" class="text-gray-500 text-sm mt-1 line-clamp-2">
+                                {{ Str::limit(strip_tags($item->description), 80) }}
+                            </p>
+                        </div>
 
-        <!-- Prix & action -->
-        <div class="flex justify-between items-center mt-auto">
-            <div itemprop="offers" itemscope itemtype="https://schema.org/Offer">
-                <meta itemprop="priceCurrency" content="TND">
-                <meta itemprop="price" content="{{ number_format($item->price, 2, '.', '') }}">
-                <meta itemprop="availability" content="{{ $item->stock > 0 ? 'https://schema.org/InStock' : 'https://schema.org/OutOfStock' }}">
-                <meta itemprop="priceValidUntil" content="{{ now()->addYear()->format('Y-m-d') }}">
-                <link itemprop="url" href="{{ route('preview-article', $item->slug) }}">
+                        <!-- Prix & action -->
+                        <div class="flex justify-between items-center mt-auto">
+                            <div itemprop="offers" itemscope itemtype="https://schema.org/Offer">
+                                <meta itemprop="priceCurrency" content="TND">
+                                <meta itemprop="price" content="{{ number_format($item->price, 2, '.', '') }}">
+                                <meta itemprop="availability" content="{{ $item->stock > 0 ? 'https://schema.org/InStock' : 'https://schema.org/OutOfStock' }}">
+                                <meta itemprop="priceValidUntil" content="{{ now()->addYear()->format('Y-m-d') }}">
+                                <link itemprop="url" href="{{ route('preview-article', $item->slug) }}">
 
-                <p class="text-black font-bold text-xl">
-                    <span>{{ number_format($item->price, 2) }}</span> DT
-                </p>
-            </div>
+                                <p class="text-black font-bold text-xl">
+                                    <span>{{ number_format($item->price, 2) }}</span> DT
+                                </p>
+                            </div>
 
-            <button aria-label="Ajouter {{ $item->name }} au panier"
-                data-id="{{ $item->id }}"
-                data-name="{{ $item->name }}"
-                data-price="{{ $item->price ?? 0 }}"
-                data-image="{{ asset('storage/' . $item->image_avant) }}"
-                data-stock="{{ $item->stock }}"
-                class="flex items-center gap-2 bg-black hover:bg-gray-800 text-white px-4 py-2 rounded-lg transition transform hover:scale-105"
-                @if ($item->stock == 0) disabled @endif
-                onclick="addToCart(this)">
-                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
-                </svg>
-                Ajouter
-            </button>
-        </div>
-    </div>
+                            <button aria-label="Ajouter {{ $item->name }} au panier"
+                                data-id="{{ $item->id }}"
+                                data-name="{{ $item->name }}"
+                                data-price="{{ $item->price ?? 0 }}"
+                                data-image="{{ asset('storage/' . $item->image_avant) }}"
+                                data-stock="{{ $item->stock }}"
+                                class="flex items-center gap-2 bg-black hover:bg-gray-800 text-white px-4 py-2 rounded-lg transition transform hover:scale-105"
+                                @if ($item->stock == 0) disabled @endif
+                                onclick="addToCart(this)">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+                                </svg>
+                                Ajouter
+                            </button>
+                        </div>
+                        
+                    </div>
 
-    <!-- SKU et Brand (cachés) -->
-    <meta itemprop="sku" content="PROD-{{ $item->id }}">
-    <div itemprop="brand" itemscope itemtype="https://schema.org/Brand" style="display:none;">
-        <meta itemprop="name" content="{{ $config->site_name ?? 'Paradis Déco' }}">
-    </div>
-</article>
+                    <!-- SKU et Brand (cachés) -->
+                    <meta itemprop="sku" content="PROD-{{ $item->id }}">
+                    <div itemprop="brand" itemscope itemtype="https://schema.org/Brand" style="display:none;">
+                        <meta itemprop="name" content="{{ $config->site_name ?? 'Paradis Déco' }}">
+                    </div>
+                </article>
                                 </div>
                             @endif
                         @empty
@@ -294,7 +295,6 @@
         </div>
     </section>
 
-    {{-- resources/views/front-office/partials/inspirations.blade.php --}}
     @if ($inspirations->isNotEmpty())
         <section class="py-16 bg-gray-50">
             <div class="container mx-auto px-6">

@@ -10,7 +10,34 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <link rel="icon" type="image/x-icon" href="{{ asset('assets/img/cover-image-removebg-preview.png') }}">
     <meta name="csrf-token" content="{{ csrf_token() }}">
+
+    @php
+        $siteName       = $config->site_name ?? 'Paradis Déco';
+        $siteUrl        = config('app.url', url('/'));
+        $siteDesc       = $config->meta_description ?? 'Boutique déco en ligne en Tunisie : meubles, luminaires, tapis et accessoires artisanaux pour un intérieur moderne.';
+        $defaultOgImage = asset('assets/img/cover-image-removebg-preview.png');
+        $supportEmail   = $config->support_email ?? 'contact@paradisdeco.tn';
+        $supportPhone   = $config->support_phone ?? '+216 73 000 000';
+        $addressText    = $config->address ?? "Rue Habib Thameur, M'saken 4070, Sousse, Tunisie";
+    @endphp
+
+    <meta name="description" content="{{ $siteDesc }}">
+
+    <meta property="og:type" content="website">
+    <meta property="og:locale" content="fr_TN">
+    <meta property="og:site_name" content="{{ $siteName }}">
+    <meta property="og:title" content="{{ trim($__env->yieldContent('title')) ?: ($siteName . ' | Boutique déco Tunisie') }}">
+    <meta property="og:description" content="{{ $siteDesc }}">
+    <meta property="og:url" content="{{ url()->current() }}">
+    <meta property="og:image" content="{{ $defaultOgImage }}">
+
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="{{ trim($__env->yieldContent('title')) ?: ($siteName . ' | Boutique déco Tunisie') }}">
+    <meta name="twitter:description" content="{{ $siteDesc }}">
+    <meta name="twitter:image" content="{{ $defaultOgImage }}">
+
     @yield('meta')
+
     <script src="https://cdn.tailwindcss.com"></script>
     @yield('css')
 <meta name="google-site-verification" content="XvcyV0f3IMnjIMN1zqCcpVUKjYOShFpheWikB40yCgg" />
@@ -21,6 +48,37 @@
     $freeShippingLimit = 150;
     $freeShippingJson  = json_encode($freeShippingLimit, JSON_NUMERIC_CHECK);
 @endphp
+
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "Organization",
+  "name": "{{ $siteName }}",
+  "url": "{{ $siteUrl }}",
+  "logo": "{{ $defaultOgImage }}",
+  "email": "{{ $supportEmail }}",
+  "telephone": "{{ $supportPhone }}"
+}
+</script>
+
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "LocalBusiness",
+  "name": "{{ $siteName }}",
+  "image": "{{ $defaultOgImage }}",
+  "url": "{{ $siteUrl }}",
+  "telephone": "{{ $supportPhone }}",
+  "address": {
+    "@type": "PostalAddress",
+    "streetAddress": "{{ $addressText }}",
+    "addressLocality": "M'saken",
+    "addressRegion": "Sousse",
+    "postalCode": "4070",
+    "addressCountry": "TN"
+  }
+}
+</script>
 
 <!-- Google tag (gtag.js) -->
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-404BKDSJRD"></script>

@@ -29,6 +29,8 @@ class AccueilController extends Controller
             ->take(3)
             ->get();
 
+            
+
         return view('front-office.acceuil.index', [
             'latestProducts' => $latestProducts,
             'latestCategories' => $latestCategorys,
