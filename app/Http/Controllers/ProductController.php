@@ -130,7 +130,7 @@ class ProductController extends Controller
             'mediaimage.*' => 'image',
             'old_media_images' => 'nullable|string',
             'is_active' => 'sometimes|boolean',
-              'meta_title' => 'nullable|string|max:255',
+            'meta_title' => 'nullable|string|max:255',
             'meta_keywords' => 'nullable|string|max:255',
             'meta_description' => 'nullable|string|max:255',
         ];

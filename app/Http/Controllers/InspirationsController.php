@@ -36,8 +36,8 @@ class InspirationsController extends Controller
             'title' => 'required|string|max:255',
             'resume' => 'nullable|string',
             'description' => 'nullable|string',
-            'meta_title' => 'nullable|string|max:70',
-            'meta_description' => 'nullable|string|max:160',
+            'meta_title' => 'nullable|string',
+            'meta_description' => 'nullable|string',
             'image' => 'nullable|image|',
             'is_active' => 'boolean',
         ]);
@@ -90,9 +90,9 @@ class InspirationsController extends Controller
             'title' => 'required|string|max:255',
             'resume' => 'nullable|string',
             'description' => 'nullable|string',
-            'meta_title' => 'nullable|string|max:70',
-            'meta_description' => 'nullable|string|max:160',
-            'image' => 'nullable|image|',
+            'meta_title' => 'nullable|string',
+            'meta_description' => 'nullable|string|',
+            'image' => 'nullable|image',
             'is_active' => 'boolean',
         ]);
 

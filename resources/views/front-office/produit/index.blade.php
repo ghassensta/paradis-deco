@@ -25,68 +25,7 @@
     <meta property="product:price:amount" content="{{ number_format($product->price, 2) }}">
     <meta property="product:price:currency" content="TND">
     <meta name="twitter:card" content="summary_large_image">
- <script type="application/ld+json">
-{
-  "@context": "https://schema.org",
-  "@type": "Product",
-  "name": "{{ $product->name }}",
-  "image": ["{{ Storage::url($product->image_avant) }}"],
-  "description": "{{ Str::limit(strip_tags($product->description), 250) }}",
-  "sku": "PROD-{{ $product->id }}",
-  "brand": {
-    "@type": "Brand",
-    "name": "{{ config('app.name', 'ParaDéco') }}"
-  },
-  "offers": {
-    "@type": "Offer",
-    "url": "{{ url()->current() }}",
-    "priceCurrency": "TND",
-    "price": "{{ number_format($product->price, 2, '.', '') }}",
-    "availability": "{{ $product->stock > 0 ? 'https://schema.org/InStock' : 'https://schema.org/OutOfStock' }}",
-    "itemCondition": "https://schema.org/NewCondition",
-    "priceValidUntil": "2026-12-31",
-    "seller": {
-      "@type": "Organization",
-      "name": "{{ config('app.name', 'ParaDéco') }}"
-    },
-    "hasMerchantReturnPolicy": {
-      "@type": "MerchantReturnPolicy",
-      "returnPolicyCategory": "https://schema.org/MerchantReturnFiniteReturnWindow",
-      "merchantReturnDays": 14,
-      "returnMethod": "https://schema.org/ReturnByMail",
-      "returnFees": "https://schema.org/FreeReturn"
-    }
-  },
-  "aggregateRating": {
-    "@type": "AggregateRating",
-    "ratingValue": "{{ $totalReviews > 0 ? number_format($averageRating, 1) : '5.0' }}",
-    "reviewCount": "{{ $totalReviews > 0 ? $totalReviews : 1 }}",
-    "bestRating": "5",
-    "worstRating": "1"
-  }
-  @if($totalReviews > 0),
-  "review": [
-    @foreach($reviews->take(5) as $review)
-    {
-      "@type": "Review",
-      "author": {
-        "@type": "Person",
-        "name": "{{ $review->name ?? 'Client vérifié' }}"
-      },
-      "reviewRating": {
-        "@type": "Rating",
-        "ratingValue": "{{ $review->rating }}",
-        "bestRating": "5",
-        "worstRating": "1"
-      },
-      "reviewBody": "{{ Str::limit(strip_tags($review->comment), 200) }}",
-      "datePublished": "{{ $review->created_at->toIso8601String() }}"
-    }{{ !$loop->last ? ',' : '' }}
-    @endforeach
-  ]
-  @endif
-}
-</script>
+ 
 
 @endsection
 
