@@ -26,57 +26,31 @@
 {
   "@context": "https://schema.org",
   "@type": "ItemList",
-  "name": "Tous les produits – Paradis Déco",
-  "description": "Découvrez tous les produits déco disponibles sur Paradis Déco : meubles, luminaires et accessoires en Tunisie.",
-  "url": "{{ url()->current() }}",
-  "numberOfItems": {{ $products->total() }},
   "itemListElement": [
     @foreach($products as $index => $product)
     {
       "@type": "ListItem",
-      "position": {{ $index + 1 }},
-      "url": "{{ route('preview-article', $product->slug) }}",
+      "position": {{ $products->firstItem() + $index }},
       "item": {
         "@type": "Product",
-        "@id": "{{ route('preview-article', $product->slug) }}",
-        "name": "{{ $product->name }}",
-        "description": "{{ Str::limit(strip_tags($product->description), 160) }}",
-        "image": [
-          "{{ asset('storage/' . $product->image_avant) }}"
-        ],
-        "sku": "{{ $product->sku ?? $product->id }}",
+        "name": "{{ addslashes($product->nom) }}",
+        "image": "{{ asset('storage/' . $product->image) }}",
+        "description": "{{ addslashes(
+            $product->description
+                ? Str::limit(strip_tags($product->description), 160)
+                : 'Produit décoratif moderne et élégant disponible chez Paradis Déco.'
+        ) }}",
+        "sku": "{{ $product->id }}",
         "brand": {
           "@type": "Brand",
           "name": "Paradis Déco"
         },
         "offers": {
           "@type": "Offer",
-          "url": "{{ route('preview-article', $product->slug) }}",
+          "url": "{{ route('produits.show', $product->slug) }}",
           "priceCurrency": "TND",
           "price": "{{ number_format($product->price, 2, '.', '') }}",
-          "availability": "https://schema.org/{{ $product->stock > 0 ? 'InStock' : 'OutOfStock' }}",
-          "priceValidUntil": "{{ now()->addYear()->format('Y-m-d') }}",
-
-          "hasMerchantReturnPolicy": {
-            "@type": "MerchantReturnPolicy",
-            "returnPolicyCategory": "https://schema.org/MerchantReturnFiniteReturnWindow",
-            "merchantReturnDays": 30,
-            "returnMethod": "https://schema.org/ReturnInStore",
-            "returnFees": "https://schema.org/FreeReturn"
-          },
-
-          "shippingDetails": {
-            "@type": "OfferShippingDetails",
-            "shippingRate": {
-              "@type": "MonetaryAmount",
-              "value": 7,
-              "currency": "TND"
-            },
-            "shippingDestination": {
-              "@type": "DefinedRegion",
-              "addressCountry": "TN"
-            }
-          }
+          "availability": "https://schema.org/InStock"
         }
       }
     }@if(!$loop->last),@endif
@@ -84,6 +58,7 @@
   ]
 }
 </script>
+
 
 
 @endsection
@@ -247,13 +222,13 @@
                     <!-- Products List - Design amélioré -->
                     <div class="grid grid-cols-1 xs:grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 sm:gap-6">
                         @forelse($products as $product)
-                        <article class="bg-white rounded-xl overflow-hidden group transition-all duration-300 hover:shadow-lg border border-gray-100 hover:border-gray-200" itemscope itemtype="http://schema.org/Product">
+                        <article class="bg-white rounded-xl overflow-hidden group transition-all duration-300 hover:shadow-lg border border-gray-100 hover:border-gray-200">
                             <!-- Image Section - Style amélioré -->
                             <div class="relative overflow-hidden aspect-square">
                                 <a href="{{ route('preview-article', $product->slug) }}" class="block h-full">
                                     <img src="{{ asset('storage/' . $product->image_avant ?? $product->images[0]) }}" alt="{{ $product->name }} | {{ $config->site_name }}"
                                         class="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
-                                        loading="lazy" itemprop="image" />
+                                        loading="lazy"  />
                                 </a>
                                 <!-- Badges - Style amélioré -->
                                 @if($product->created_at->diffInDays(now()) < 30)
@@ -275,19 +250,26 @@
                             <!-- Content Section - Style amélioré -->
                             <div class="p-4">
                                 <div class="mb-3">
-                                    <h3 class="text-base font-semibold text-gray-900 hover:text-primary transition-colors mb-1 line-clamp-2" itemprop="name">
+                                    <h3 class="text-base font-semibold text-gray-900 hover:text-primary transition-colors mb-1 line-clamp-2" >
                                         <a href="{{ route('preview-article', $product->slug) }}">{{ $product->name }}</a>
                                     </h3>
-                                    <p class="text-gray-500 text-xs sm:text-sm line-clamp-2 mb-2">{{ $product->description }}</p>
+                                   <p class="text-gray-500 text-xs sm:text-sm line-clamp-2 mb-2"
+                                            >
+                                                {{ $product->description
+                                                    ? Str::limit(strip_tags($product->description), 160)
+                                                    : 'Produit décoratif moderne et élégant disponible chez Paradis Déco.'
+                                                }}
+                                            </p>
+
+
 
                                     <!-- Rating - Style amélioré -->
-                                    <div class="flex items-center mb-2" itemprop="aggregateRating" itemscope itemtype="http://schema.org/AggregateRating">
+                                    <div class="flex items-center mb-2" >
                                         <div class="flex items-center">
                                             <svg class="w-4 h-4 text-yellow-400 mr-1" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg">
                                                 <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"></path>
                                             </svg>
-                                            <span class="text-xs font-medium text-gray-600" itemprop="ratingValue">4.8</span>
-                                            <meta itemprop="reviewCount" content="120">
+                                            <span class="text-xs font-medium text-gray-600" >4.8</span>
                                         </div>
                                     </div>
                                 </div>
@@ -295,28 +277,16 @@
                                 <!-- Price and Action - Style amélioré -->
                                 <div class="flex justify-between items-center">
                                    <p class="text-black font-bold text-lg"
-                                            itemprop="offers"
-                                            itemscope
-                                            itemtype="https://schema.org/Offer">
 
-                                                <span itemprop="price">{{ number_format($product->price, 2) }}</span> DT
-
-                                                <meta itemprop="priceCurrency" content="TND">
-
-                                                {{-- disponibilité --}}
-                                                <link itemprop="availability"
-                                                    href="https://schema.org/{{ $product->stock > 0 ? 'InStock' : 'OutOfStock' }}">
-
-                                                {{-- date de validité du prix --}}
-                                                <meta itemprop="priceValidUntil" content="{{ now()->addYear()->format('Y-m-d') }}">
+                                                <span >{{ number_format($product->price, 2) }}</span> DT
 
                                                 {{-- URL du produit --}}
-                                                <link itemprop="url" href="{{ route('preview-article', $product->slug) }}">
+                                                <link  href="{{ route('preview-article', $product->slug) }}">
                                             </p>
 
                                     <button aria-label="Ajouter {{ $product->name }} au panier"
                                         data-id="{{ $product->id }}" data-name="{{ $product->name }}"
-                                        data-price="{{ $product->price }}"
+                                        data-price="{{ number_format($product->price,2) }}"
                                         data-image="{{ asset('storage/' . $product->images[0]) }}"
                                         data-stock="{{ $product->stock }}"
                                         class="cursor-pointer flex items-center justify-center gap-1 bg-black hover:bg-black-dark text-white p-2 rounded-lg transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-primary focus:ring-opacity-50 hover:shadow-md"

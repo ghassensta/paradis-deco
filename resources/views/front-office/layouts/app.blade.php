@@ -38,7 +38,7 @@
 
     @yield('meta')
 
-    <script src="https://cdn.tailwindcss.com"></script>
+    @vite(['resources/css/app.css', 'resources/js/app.js'])
     @yield('css')
 <meta name="google-site-verification" content="XvcyV0f3IMnjIMN1zqCcpVUKjYOShFpheWikB40yCgg" />
 

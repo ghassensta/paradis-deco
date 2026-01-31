@@ -17,6 +17,14 @@
     <meta property="og:title" content="{{ $product->meta_title ?? $product->name }}">
     <meta property="og:description"
         content="{{ $product->meta_description ?? Str::limit(strip_tags($product->description), 155) }}">
+        <meta name="keywords" content="{{
+    isset($product->meta_keywords)
+        ? (is_array($product->meta_keywords)
+            ? implode(',', $product->meta_keywords)
+            : $product->meta_keywords)
+        : ''
+}}">
+
     <meta property="og:url" content="{{ url()->current() }}">
     <meta property="og:image" content="{{ asset('storage/' . ($product->image_avant ?? 'default.jpg')) }}">
     <meta property="og:image:width" content="1200">
@@ -24,8 +32,39 @@
     <meta property="product:availability" content="{{ $product->stock > 0 ? 'in stock' : 'out of stock' }}">
     <meta property="product:price:amount" content="{{ number_format($product->price, 2) }}">
     <meta property="product:price:currency" content="TND">
-    <meta name="twitter:card" content="summary_large_image">
- 
+    <meta name="twitter:card" content="summary_large_image">*
+    <meta name="keywords" content="{{ isset($product->keywords) ? implode(',', is_array($product->keywords) ? $product->keywords : explode(',', $product->keywords)) : '' }}">
+
+
+    <script type="application/ld+json">
+{
+    "@context": "https://schema.org",
+    "@type": "Product",
+    "name": "{{ $product->name }}",
+    "image": [
+        "{{ Storage::url($product->image_avant) }}",
+        @foreach($images as $img)
+        "{{ Storage::url($img) }}"@if(!$loop->last),@endif
+        @endforeach
+    ],
+    "description": "{{ Str::limit(strip_tags($product->description), 160) }}",
+    "sku": "{{ $product->id }}",
+    "brand": { "@type": "Brand", "name": "Paradis Déco" },
+    "offers": {
+        "@type": "Offer",
+        "url": "{{ url()->current() }}",
+        "priceCurrency": "TND",
+        "price": "{{ number_format($product->price, 2) }}",
+        "availability": "https://schema.org/{{ $product->stock > 0 ? 'InStock' : 'OutOfStock' }}"
+    },
+    "aggregateRating": {
+        "@type": "AggregateRating",
+        "ratingValue": "{{ $averageRating }}",
+        "reviewCount": "{{ $totalReviews }}"
+    }
+}
+</script>
+
 
 @endsection
 
@@ -164,7 +203,7 @@
                     </div>
                     <div class="mb-6">
                         <div class="flex items-center space-x-4">
-                            {{-- <div class="flex items-center border border-gray-300 rounded-lg">
+                            <div class="flex items-center border border-gray-300 rounded-lg">
                                 <button
                                     class="px-3 py-2 text-gray-600 hover:text-yellow-600 {{ $product->stock == 0 ? 'opacity-50 cursor-not-allowed' : '' }}"
                                     onclick="updateQuantity(-1, {{ $product->id }}, {{ $product->stock }})"
@@ -178,7 +217,7 @@
                                     aria-label="Augmenter la quantité" {{ $product->stock == 0 ? 'disabled' : '' }}>
                                     <i class="fas fa-plus"></i>
                                 </button>
-                            </div> --}}
+                            </div>
                             <button
                                 class="flex-1 bg-yellow-600 hover:bg-yellow-700 text-white py-3 px-6 rounded-lg font-medium transition flex items-center justify-center focus:outline-none focus:ring-2 focus:ring-yellow-500 {{ $product->stock == 0 ? 'opacity-50 cursor-not-allowed' : '' }}"
                                 data-id="{{ $product->id }}" data-name="{{ $product->name }}"

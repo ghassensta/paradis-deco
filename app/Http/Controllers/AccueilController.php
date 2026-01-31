@@ -29,7 +29,7 @@ class AccueilController extends Controller
             ->take(3)
             ->get();
 
-            
+
 
         return view('front-office.acceuil.index', [
             'latestProducts' => $latestProducts,
@@ -54,89 +54,56 @@ class AccueilController extends Controller
         return view('front-office.inspirations.index', compact('inspiration', 'relatedInspirations'));
     }
 
-    public function ProduitShow($slug)
-    {
-        // Récupérer le produit avec les avis approuvés
-        $product = Product::where('slug', $slug)
-            ->where('is_active', true)
-            ->with(['avis' => function($query) {
-                $query->where('approved', true)->latest();
-            }])
-            ->firstOrFail();
+public function ProduitShow($slug)
+{
+    // Récupérer le produit avec les avis approuvés
+    $product = Product::where('slug', $slug)
+        ->where('is_active', true)
+        ->with(['avis' => function($query) {
+            $query->where('approved', true)->latest();
+        }])
+        ->firstOrFail();
 
-        // Récupérer les avis approuvés
-        $reviews = $product->avis()->where('approved', true)->latest()->get();
+    // Calcul des avis approuvés
+    $reviews = $product->avis; // déjà préchargé avec "with"
+    $totalReviews = $reviews->count();
+    $averageRating = $totalReviews > 0 ? round($reviews->avg('rating'), 1) : 0;
 
-        // Calculs pour les avis
-        $totalReviews = $reviews->count();
-        $averageRating = $totalReviews > 0 ? round($reviews->avg('rating'), 1) : 0;
-
-        // Distribution des notes
-        $ratingDistribution = [];
-        for ($i = 5; $i >= 1; $i--) {
-            $count = $reviews->where('rating', $i)->count();
-            $ratingDistribution[$i] = $totalReviews > 0 ? round(($count / $totalReviews) * 100, 1) : 0;
-        }
-
-        // Produits similaires
-        $categories = $product->category_ids;
-        $similarProducts = collect();
-
-        if (is_array($categories) && count($categories) > 0) {
-            $similarProducts = Product::where('is_active', true)
-                ->where('id', '!=', $product->id)
-                ->where(function ($query) use ($categories) {
-                    foreach ($categories as $categoryId) {
-                        $query->orWhereJsonContains('category_ids', $categoryId);
-                    }
-                })
-                ->inRandomOrder()
-                ->limit(8)
-                ->get();
-        }
-
-        return view('front-office.produit.index', [
-            'product' => $product,
-            'similarProducts' => $similarProducts,
-            'reviews' => $reviews,
-            'averageRating' => $averageRating,
-            'ratingDistribution' => $ratingDistribution,
-            'totalReviews' => $totalReviews,
-        ]);
+    // Distribution des notes
+    $ratingDistribution = [];
+    for ($i = 5; $i >= 1; $i--) {
+        $count = $reviews->where('rating', $i)->count();
+        $ratingDistribution[$i] = $totalReviews > 0 ? round(($count / $totalReviews) * 100, 1) : 0;
     }
 
-    public function storeReview(Request $request)
-    {
-        $validator = Validator::make($request->all(), [
-            'product_id' => 'required|exists:products,id',
-            'rating' => 'required|integer|min:1|max:5',
-            'comment' => 'required|string|max:1000',
-            'name' => 'nullable|string|max:255',
-            'location' => 'nullable|string|max:255',
-        ]);
-
-        if ($validator->fails()) {
-            return response()->json([
-                'success' => false,
-                'errors' => $validator->errors()->toArray()
-            ], 422);
-        }
-
-        $avis = Avis::create([
-            'product_id' => $request->product_id,
-            'rating' => $request->rating,
-            'comment' => $request->comment,
-            'name' => $request->name ?: 'Client vérifié',
-            'location' => $request->location,
-            'approved' => false,
-        ]);
-
-        return response()->json([
-            'success' => true,
-            'message' => 'Merci pour votre avis ! Il sera affiché après modération.'
-        ]);
+    // Produits similaires par catégories
+    $categories = $product->category_ids;
+    $similarProducts = collect();
+    if (is_array($categories) && count($categories) > 0) {
+        $similarProducts = Product::where('is_active', true)
+            ->where('id', '!=', $product->id)
+            ->where(function ($query) use ($categories) {
+                foreach ($categories as $categoryId) {
+                    $query->orWhereJsonContains('category_ids', $categoryId);
+                }
+            })
+            ->inRandomOrder()
+            ->limit(8)
+            ->get();
     }
 
+    $images = $product->images ? json_decode($product->images, true) : [];
+
+    return view('front-office.produit.index', [
+        'product' => $product,
+        'similarProducts' => $similarProducts,
+        'reviews' => $reviews,
+        'averageRating' => $averageRating,
+        'ratingDistribution' => $ratingDistribution,
+        'totalReviews' => $totalReviews,
+         'images' => $images,
+    ]);
+}
     private function sidebarCategories()
     {
         return Category::query()
@@ -159,11 +126,14 @@ class AccueilController extends Controller
 
     public function AllProduits()
     {
+        $config = Configuration::first();
         return view('front-office.produit.allproduits', [
             'products' => Product::active()->latest()->paginate(12),
             'categories' => $this->sidebarCategories(),
             'selectedCategory' => null,
-            'freeShippingLimit' => config('shop.free_shipping_limit'),
+            'freeShippingLimit' => $config?->free_shipping_threshold,
+                    'config'            => $config,
+
         ]);
     }
 
@@ -176,12 +146,14 @@ class AccueilController extends Controller
                 ->orWhereJsonContains('category_ids', (string) $selectedCategory->id))
             ->latest()
             ->paginate(12);
-
+            $config = Configuration::first();
         return view('front-office.categorie.categorieproduits', [
             'products' => $products,
             'categories' => $this->sidebarCategories(),
             'selectedCategory' => $selectedCategory,
-            'freeShippingLimit' => config('shop.free_shipping_limit'),
+            'freeShippingLimit' => $config?->free_shipping_threshold,
+                    'config'            => $config,
+
         ]);
     }
 
