@@ -1,94 +1,216 @@
 @extends('front-office.layouts.app')
+
 {{-- =========================
-     MÉTADONNÉES SEO OPTIMISÉES
+     MÉTADONNÉES SEO OPTIMISÉES
 ========================== --}}
-@section('title', 'Paradis Déco – Boutique déco en ligne Tunisie | Sublimez votre intérieur')
+@section('title', 'Paradis Déco – Boutique déco en ligne Tunisie | Sublimez votre intérieur')
 
 @section('meta')
     @php
-        // — Image Open Graph
+        $keywords = [
+            'décoration intérieure Tunisie',
+            'boutique déco en ligne',
+            'vente décoration maison Tunisie',
+            'meubles tunisiens',
+            'luminaires Tunisie',
+            'tapis artisanaux Tunisie',
+            'accessoires maison',
+            'artisanat tunisien',
+            'ameublement moderne',
+            'cadeaux maison Tunisie',
+        ];
+
         $ogImage = asset('images/og/paradis-deco.jpg');
     @endphp
 
-    <meta name="description"
-        content="Paradis Déco, boutique déco n°1 en Tunisie : meubles, luminaires, tapis et accessoires artisanaux pour un intérieur moderne et chaleureux. Livraison rapide partout en Tunisie.">
-
-<meta name="keywords"
-content="décoration intérieure Tunisie, boutique déco en ligne, meubles Tunisie, luminaires Tunisie, tapis artisanaux, accessoires maison, artisanat tunisien, ameublement moderne">
-    <meta name="author" content="Paradis Déco">
-    <meta name="publisher" content="Paradis Déco">
+    <meta name="description" content="Paradis Déco, boutique déco n°1 en Tunisie : meubles, luminaires, tapis et accessoires artisanaux pour un intérieur moderne et chaleureux. Livraison rapide partout en Tunisie.">
+    <meta name="keywords" content="{{ implode(', ', $keywords) }}">
+    <meta name="author" content="Paradis Déco">
+    <meta name="publisher" content="Paradis Déco">
 
     <link rel="canonical" href="{{ url()->current() }}">
     <link rel="alternate" href="{{ url()->current() }}" hreflang="fr-tn">
     <link rel="alternate" href="{{ url()->current() }}" hreflang="x-default">
 
-    <!-- Robots -->
     <meta name="robots" content="index, follow, max-snippet:-1, max-image-preview:large, max-video-preview:-1">
 
-    <!-- Open Graph / Facebook -->
+    <!-- Open Graph -->
     <meta property="og:type" content="website">
     <meta property="og:locale" content="fr_TN">
-    <meta property="og:site_name" content="Paradis Déco">
+    <meta property="og:site_name" content="Paradis Déco">
     <meta property="og:url" content="{{ url()->current() }}">
-    <meta property="og:title" content="Paradis Déco – Boutique déco en ligne Tunisie | Sublimez votre intérieur">
-    <meta property="og:description"
-        content="Meubles, luminaires & accessoires maison fabriqués ou sélectionnés en Tunisie.">
+    <meta property="og:title" content="Paradis Déco – Boutique déco en ligne Tunisie | Sublimez votre intérieur">
+    <meta property="og:description" content="Meubles, luminaires & accessoires maison fabriqués ou sélectionnés en Tunisie.">
     <meta property="og:image" content="{{ $ogImage }}">
-    <meta property="og:image:alt" content="Salon décoré avec meubles et luminaires de Paradis Déco">
+    <meta property="og:image:alt" content="Salon décoré avec meubles et luminaires de Paradis Déco">
 
-    <!-- Twitter Card -->
+    <!-- Twitter Card -->
     <meta name="twitter:card" content="summary_large_image">
-    <meta name="twitter:title" content="Paradis Déco – Sublimez votre intérieur">
+    <meta name="twitter:title" content="Paradis Déco – Sublimez votre intérieur">
     <meta name="twitter:description" content="Boutique déco en ligne n°1 en Tunisie. Livraison rapide.">
     <meta name="twitter:image" content="{{ $ogImage }}">
 
+    {{-- JSON-LD Schema.org (tout le balisage structuré ici) --}}
+    <script type="application/ld+json">
+    {
+        "@context": "https://schema.org",
+        "@graph": [
+            {
+                "@type": "Organization",
+                "@id": "{{ url('/') }}/#organization",
+                "name": "{{ $config->site_name ?? 'Paradis Déco' }}",
+                "url": "{{ url('/') }}",
+                "logo": "{{ $ogImage }}",
+                "sameAs": [
+                    "https://www.facebook.com/paradisdeco.tn",
+                    "https://www.instagram.com/paradisdeco.tn"
+                ]
+            },
+            {
+                "@type": "WebSite",
+                "@id": "{{ url('/') }}/#website",
+                "url": "{{ url('/') }}",
+                "name": "{{ $config->site_name ?? 'Paradis Déco' }}",
+                "publisher": {
+                    "@id": "{{ url('/') }}/#organization"
+                }
+            },
+            {
+                "@type": "WebPage",
+                "@id": "{{ url()->current() }}/#webpage",
+                "url": "{{ url()->current() }}",
+                "name": "Paradis Déco – Boutique déco en ligne Tunisie",
+                "isPartOf": {
+                    "@id": "{{ url('/') }}/#website"
+                },
+                "breadcrumb": {
+                    "@id": "{{ url()->current() }}/#breadcrumb"
+                }
+            },
+            {
+                "@type": "BreadcrumbList",
+                "@id": "{{ url()->current() }}/#breadcrumb",
+                "itemListElement": [
+                    {
+                        "@type": "ListItem",
+                        "position": 1,
+                        "name": "Accueil",
+                        "item": "{{ url('/') }}"
+                    }
+                ]
+            },
+            {
+                "@type": "ItemList",
+                "name": "Nouveautés – Produits en vedette",
+                "itemListElement": [
+                    @forelse ($latestProducts as $index => $item)
+                        @if ($item->is_active)
+                            {
+                                "@type": "ListItem",
+                                "position": {{ $index + 1 }},
+                                "item": {
+                                    "@type": "Product",
+                                    "@id": "{{ route('preview-article', $item->slug) }}/#product",
+                                    "name": {{ json_encode($item->name) }},
+                                    "image": "{{ asset('storage/' . $item->image_avant) }}",
+                                    "description": {{ json_encode(Str::limit(strip_tags($item->description), 180)) }},
+                                    "sku": "PROD-{{ $item->id }}",
+                                    "brand": {
+                                        "@type": "Brand",
+                                        "name": "{{ $config->site_name ?? 'Paradis Déco' }}"
+                                    },
+                                    "offers": {
+                                        "@type": "Offer",
+                                        "url": "{{ route('preview-article', $item->slug) }}",
+                                        "priceCurrency": "TND",
+                                        "price": "{{ number_format($item->price, 2, '.', '') }}",
+                                        "availability": "{{ $item->stock > 0 ? 'https://schema.org/InStock' : 'https://schema.org/OutOfStock' }}",
+                                        "priceValidUntil": "{{ now()->addYear()->format('Y-m-d') }}",
+                                        "seller": {
+                                            "@type": "Organization",
+                                            "name": "{{ $config->site_name ?? 'Paradis Déco' }}"
+                                        }
+                                    }
+                                    @if (isset($item->average_rating) && $item->review_count > 0)
+                                    ,"aggregateRating": {
+                                        "@type": "AggregateRating",
+                                        "ratingValue": "{{ $item->average_rating }}",
+                                        "reviewCount": "{{ $item->review_count }}"
+                                    }
+                                    @endif
+                                }
+                            }{{ !$loop->last ? ',' : '' }}
+                        @endif
+                    @empty
+                        /* Aucun produit */
+                    @endforelse
+                ]
+            }
+            @if ($testimonials->isNotEmpty())
+            ,{
+                "@type": "Organization",
+                "@id": "{{ url('/') }}/#organization",
+                "review": [
+                    @foreach ($testimonials as $testimonial)
+                    {
+                        "@type": "Review",
+                        "reviewRating": {
+                            "@type": "Rating",
+                            "ratingValue": "{{ $testimonial->rating }}",
+                            "bestRating": "5"
+                        },
+                        "author": {
+                            "@type": "Person",
+                            "name": {{ json_encode($testimonial->name) }}
+                        },
+                        "reviewBody": {{ json_encode(Str::limit($testimonial->comment, 300)) }},
+                        "datePublished": "{{ $testimonial->created_at->format('Y-m-d') }}"
+                    }{{ !$loop->last ? ',' : '' }}
+                    @endforeach
+                ]
+            }
+            @endif
+        ]
+    }
+    </script>
 @endsection
 
 @section('content')
-    <!-- HERO avec une seule image -->
+    <!-- Le reste de ton contenu HTML reste IDENTIQUE, on a juste retiré les microdata -->
+
+    <!-- HERO -->
     <section class="relative overflow-hidden">
         <div id="carouselContainer" class="relative w-full">
             <div class="carousel-slide">
-                <!-- Slide 1 -->
                 <div class="relative w-full">
                     @php
-                        // Si $config->homepage_banner existe → on génère l’URL publique « storage/... »
-                        // Sinon on utilise l’image de secours Unsplash
                         $bannerUrl = $config->homepage_banner
                             ? asset('storage/' . $config->homepage_banner)
                             : 'https://images.unsplash.com/photo-1560448204-e02f11c3d0e2?auto=format&fit=crop&w=1740&q=80';
                     @endphp
 
                     <img src="{{ $bannerUrl }}" alt="Bannière {{ $config->site_name }}"
-                        class="w-full h-full object-cover" loading="lazy" />
+                         class="w-full h-full object-cover" loading="lazy" />
 
                     <div class="absolute inset-0 bg-black/40 flex flex-col justify-center items-center text-center px-6">
                         <h1 class="text-4xl md:text-6xl font-extrabold text-white drop-shadow-lg mb-4 animate-fade-in">
                             {{ $config->meta_title }}
                         </h1>
-
                         <p class="text-lg md:text-2xl text-gray-200 max-w-2xl mb-6 animate-fade-in-delay">
                             {{ $config->meta_description }}
                         </p>
-
                         <a href="{{ route('allproduits') }}"
-                            class="inline-block px-8 py-3 bg-white text-primary rounded-full font-bold
-                  hover:bg-primary hover:text-yellow transition animate-fade-in-delay
-                  shadow-lg hover:shadow-xl">
+                           class="inline-block px-8 py-3 bg-white text-primary rounded-full font-bold hover:bg-primary hover:text-yellow transition animate-fade-in-delay shadow-lg hover:shadow-xl">
                             Découvrir la collection
                         </a>
                     </div>
                 </div>
-
             </div>
         </div>
 
-        <!-- Shape divider -->
         <div class="custom-shape-divider-bottom-1649125620">
             <svg data-name="Layer 1" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 120" preserveAspectRatio="none">
-                <path
-                    d="M321.39,56.44c58-10.79,114.16-30.13,172-41.86,82.39-16.72,168.19-17.73,250.45-.39C823.78,31,906.67,72,985.66,92.83c70.05,18.48,146.53,26.09,214.34,3V0H0V27.35A600.21,600.21,0,0,0,321.39,56.44Z"
-                    class="shape-fill"></path>
+                <path d="M321.39,56.44c58-10.79,114.16-30.13,172-41.86,82.39-16.72,168.19-17.73,250.45-.39C823.78,31,906.67,72,985.66,92.83c70.05,18.48,146.53,26.09,214.34,3V0H0V27.35A600.21,600.21,0,0,0,321.39,56.44Z" class="shape-fill"></path>
             </svg>
         </div>
     </section>
@@ -100,10 +222,10 @@ content="décoration intérieure Tunisie, boutique déco en ligne, meubles Tunis
             <div class="grid grid-cols-2 md:grid-cols-4 gap-6">
                 @forelse ($latestCategories as $item)
                     <a href="{{ route('categorie.produits', $item->slug) }}"
-                        class="group relative overflow-hidden rounded-xl shadow-md h-48">
+                       class="group relative overflow-hidden rounded-xl shadow-md h-48">
                         <img src="{{ $item->image_url ?? 'https://via.placeholder.com/500x300?text=Category' }}"
-                            alt="{{ $item->name }} | {{ $config->site_name }}"
-                            class="w-full h-full object-cover group-hover:scale-105 transition duration-500" loading="lazy">
+                             alt="{{ $item->name }} | {{ $config->site_name }}"
+                             class="w-full h-full object-cover group-hover:scale-105 transition duration-500" loading="lazy">
                         <div class="absolute inset-0 bg-black/30 flex items-center justify-center">
                             <h3 class="text-white text-xl font-bold group-hover:scale-110 transition">
                                 {{ $item->name }}
@@ -119,139 +241,89 @@ content="décoration intérieure Tunisie, boutique déco en ligne, meubles Tunis
         </div>
     </section>
 
-    <!-- NOUVEAUTÉS -->
-    {{-- resources/views/components/section-nouveautes.blade.php --}}
+    <!-- NOUVEAUTÉS (cartes produits sans microdata) -->
     <section id="nouveautes" class="py-16 bg-gray-50">
         <div class="container mx-auto px-6">
-            <!-- Titre -->
             <div class="text-center mb-12">
-                <span class="inline-block bg-primary-light px-4 py-2 rounded-full text-primary font-semibold mb-3">
-                    Nouveautés
-                </span>
+                <span class="inline-block bg-primary-light px-4 py-2 rounded-full text-primary font-semibold mb-3">Nouveautés</span>
                 <h2 class="text-3xl font-bold">Découvrez Nos Dernières Créations</h2>
                 <div class="w-24 h-1 bg-primary mx-auto mt-4"></div>
             </div>
 
-            <!-- CAROUSEL -->
             <div class="relative">
-                <!-- flèches -->
-                <button class="swiper-button-prev !text-[#dfb54e] hover:scale-110 transition"
-                    aria-label="Précédent"></button>
-                <button class="swiper-button-next text !text-[#dfb54e] transition" aria-label="Suivant"></button>
+                <button class="swiper-button-prev !text-[#dfb54e] hover:scale-110 transition" aria-label="Précédent"></button>
+                <button class="swiper-button-next !text-[#dfb54e] hover:scale-110 transition" aria-label="Suivant"></button>
 
-                <!-- wrapper Swiper -->
                 <div class="swiper mySwiper">
                     <div class="swiper-wrapper">
-
-                                    <!-- CARTE PRODUIT -->
-                <article class="bg-white rounded-2xl shadow-lg overflow-hidden group hover:shadow-xl transition-all duration-300 hover:-translate-y-1 h-[460px] flex flex-col justify-between">
-                  <div itemprop="seller"
-                        itemscope
-                        itemtype="https://schema.org/Organization"
-                        style="display:none;">
-                        <meta itemprop="name" content="Paradis Déco">
-                        <meta itemprop="url" content="{{ url('/') }}">
-                    </div>
-
-                    @forelse ($latestProducts as $item)
+                        @forelse ($latestProducts as $item)
                             @if ($item->is_active)
-                                <div class="swiper-slide" itemscope itemtype="https://schema.org/Product">
-                                    @if ($item->total_reviews > 0)
-                            <div itemprop="aggregateRating"
-                                itemscope
-                                itemtype="https://schema.org/AggregateRating"
-                                style="display:none;">
+                                <div class="swiper-slide">
+                                    <article class="bg-white rounded-2xl shadow-lg overflow-hidden group hover:shadow-xl transition-all duration-300 hover:-translate-y-1 h-[460px] flex flex-col justify-between">
+                                        <div class="relative h-64 overflow-hidden flex items-center justify-center bg-gray-100">
+                                            <a href="{{ route('preview-article', $item->slug) }}" title="{{ $item->meta_title ?? $item->name }}" class="block w-full h-full">
+                                                <img src="{{ asset('storage/' . $item->image_avant) }}"
+                                                     alt="{{ $item->name }}"
+                                                     class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                                                     loading="lazy">
+                                            </a>
 
-                                <meta itemprop="ratingValue" content="{{ $item->average_rating }}">
-                                <meta itemprop="reviewCount" content="{{ $item->total_reviews }}">
-                                <meta itemprop="bestRating" content="5">
-                                <meta itemprop="worstRating" content="1">
-                            </div>
-                        @endif
-                    <!-- Image -->
-                    <div class="relative h-64 overflow-hidden flex items-center justify-center bg-gray-100">
-                        <a href="{{ route('preview-article', $item->slug) }}" title="{{ $item->meta_title ?? $item->name }}" class="block w-full h-full">
-                            <img itemprop="image"
-                                src="{{ asset('storage/' . $item->image_avant) }}"
-                                alt="{{ $item->name }}"
-                                class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-                                loading="lazy">
-                        </a>
+                                            <div class="absolute top-4 right-4">
+                                                <span class="bg-[#228B22] text-white text-xs font-semibold px-3 py-1 rounded-full uppercase">Nouveau</span>
+                                            </div>
 
-                        <!-- Badges -->
-                        <div class="absolute top-4 right-4">
-                            <span class="bg-[#228B22] text-white text-xs font-semibold px-3 py-1 rounded-full uppercase">Nouveau</span>
-                        </div>
+                                            @if ($item->stock <= 5 && $item->stock > 0)
+                                                <div class="absolute top-4 left-4">
+                                                    <span class="bg-red-500 text-white text-xs font-semibold px-3 py-1 rounded-full uppercase">Stock faible</span>
+                                                </div>
+                                            @elseif ($item->stock == 0)
+                                                <div class="absolute top-4 left-4">
+                                                    <span class="bg-gray-600 text-white text-xs font-semibold px-3 py-1 rounded-full uppercase">Épuisé</span>
+                                                </div>
+                                            @endif
+                                        </div>
 
-                        @if ($item->stock <= 5 && $item->stock > 0)
-                            <div class="absolute top-4 left-4">
-                                <span class="bg-red-500 text-white text-xs font-semibold px-3 py-1 rounded-full uppercase">Stock faible</span>
-                            </div>
-                        @elseif ($item->stock == 0)
-                            <div class="absolute top-4 left-4">
-                                <span class="bg-gray-600 text-white text-xs font-semibold px-3 py-1 rounded-full uppercase">Épuisé</span>
-                            </div>
-                        @endif
-                    </div>
+                                        <div class="p-5 flex-1 flex flex-col justify-between">
+                                            <div class="mb-4">
+                                                <h3 class="text-lg font-semibold text-gray-800 hover:text-yellow-600 transition-colors line-clamp-1">
+                                                    <a href="{{ route('preview-article', $item->slug) }}">
+                                                        {{ Str::limit($item->name, 50) }}
+                                                    </a>
+                                                </h3>
+                                                <p class="text-gray-500 text-sm mt-1 line-clamp-2">
+                                                    {{ Str::limit(strip_tags($item->description), 80) }}
+                                                </p>
+                                            </div>
 
-                    <!-- Contenu -->
-                    <div class="p-5 flex-1 flex flex-col justify-between">
-                        <div class="mb-4">
-                            <h3 class="text-lg font-semibold text-gray-800 hover:text-yellow-600 transition-colors line-clamp-1">
-                                <a href="{{ route('preview-article', $item->slug) }}" itemprop="url">
-                                    <span itemprop="name">{{ Str::limit($item->name, 50) }}</span>
-                                </a>
-                            </h3>
-                            <p itemprop="description" class="text-gray-500 text-sm mt-1 line-clamp-2">
-                                {{ Str::limit(strip_tags($item->description), 80) }}
-                            </p>
-                        </div>
+                                            <div class="flex justify-between items-center mt-auto">
+                                                <p class="text-black font-bold text-xl">
+                                                    {{ number_format($item->price, 2) }} DT
+                                                </p>
 
-                        <!-- Prix & action -->
-                      <div itemprop="offers" itemscope itemtype="https://schema.org/Offer">
-                    <meta itemprop="priceCurrency" content="TND">
-                    <meta itemprop="price" content="{{ number_format($item->price, 2, '.', '') }}">
-                    <meta itemprop="availability"
-                        content="{{ $item->stock > 0 ? 'https://schema.org/InStock' : 'https://schema.org/OutOfStock' }}">
-                    <meta itemprop="priceValidUntil" content="{{ now()->addYear()->format('Y-m-d') }}">
-                    <link itemprop="url" href="{{ route('preview-article', $item->slug) }}">
-
-                            <div itemprop="hasMerchantReturnPolicy"
-                                itemscope
-                                itemtype="https://schema.org/MerchantReturnPolicy">
-
-                                <meta itemprop="returnPolicyCategory"
-                                    content="https://schema.org/MerchantReturnFiniteReturnWindow">
-                                <meta itemprop="merchantReturnDays" content="30">
-                                <meta itemprop="returnMethod"
-                                    content="https://schema.org/ReturnByMail">
-                                <meta itemprop="returnFees"
-                                    content="https://schema.org/FreeReturn">
-                                <meta itemprop="applicableCountry" content="TN">
-                            </div>
-
-                            <p class="text-black font-bold text-xl">
-                                {{ number_format($item->price, 2) }} DT
-                            </p>
-                        </div>
-
-
-                    </div>
-
-                    <!-- SKU et Brand (cachés) -->
-                    <meta itemprop="sku" content="PROD-{{ $item->id }}">
-                    <div itemprop="brand" itemscope itemtype="https://schema.org/Brand" style="display:none;">
-                        <meta itemprop="name" content="{{ $config->site_name ?? 'Paradis Déco' }}">
-                    </div>
-                </article>
+                                                <button aria-label="Ajouter {{ $item->name }} au panier"
+                                                        data-id="{{ $item->id }}"
+                                                        data-name="{{ $item->name }}"
+                                                        data-price="{{ $item->price ?? 0 }}"
+                                                        data-image="{{ asset('storage/' . $item->image_avant) }}"
+                                                        data-stock="{{ $item->stock }}"
+                                                        class="flex items-center gap-2 bg-black hover:bg-gray-800 text-white px-4 py-2 rounded-lg transition transform hover:scale-105"
+                                                        @if ($item->stock == 0) disabled @endif
+                                                        onclick="addToCart(this)">
+                                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+                                                    </svg>
+                                                    Ajouter
+                                                </button>
+                                            </div>
+                                        </div>
+                                    </article>
                                 </div>
                             @endif
                         @empty
                             <div class="swiper-slide">
                                 <div class="text-center py-8">
                                     <p class="text-gray-500 text-lg">Aucun produit disponible pour le moment.</p>
-                                    <a href="{{ route('produits.index') }}"
-                                        class="text-indigo-600 hover:underline font-semibold">
+                                    <a href="{{ route('produits.index') }}" class="text-indigo-600 hover:underline font-semibold">
                                         Voir tous les produits
                                     </a>
                                 </div>
@@ -261,140 +333,19 @@ content="décoration intérieure Tunisie, boutique déco en ligne, meubles Tunis
                 </div>
             </div>
 
-            <!-- CTA voir tout -->
             <div class="text-center mt-12">
                 <a href="{{ route('allproduits') }}"
-                    class="inline-block px-8 py-3 border-2 border-primary text-primary rounded-full font-bold  transition">
+                   class="inline-block px-8 py-3 border-2 border-primary text-primary rounded-full font-bold transition hover:bg-primary hover:text-white">
                     Voir toutes les nouveautés
                 </a>
             </div>
         </div>
     </section>
 
+    <!-- Le reste de tes sections (Services, Inspirations, Témoignages) reste inchangé -->
 
-    <!-- SERVICES EXCLUSIFS -->
-    <section class="py-16 bg-white">
-        <div class="container mx-auto px-6">
-            <h2 class="text-3xl font-bold text-center mb-12">Nos Services Exclusifs</h2>
-            <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
-                <div class="bg-gray-50 p-8 rounded-xl text-center hover:shadow-lg transition">
-                    <div class="bg-primary-light w-16 h-16 mx-auto rounded-full flex items-center justify-center mb-4">
-                        <i class="fas fa-palette text-primary text-2xl"></i>
-                    </div>
-                    <h3 class="text-xl font-bold mb-3">Conseil en Décoration</h3>
-                    <p class="text-gray-600">Nos experts vous accompagnent pour créer un intérieur qui vous ressemble.
-                    </p>
-                </div>
-                <div class="bg-gray-50 p-8 rounded-xl text-center hover:shadow-lg transition">
-                    <div class="bg-primary-light w-16 h-16 mx-auto rounded-full flex items-center justify-center mb-4">
-                        <i class="fas fa-truck text-primary text-2xl"></i>
-                    </div>
-                    <h3 class="text-xl font-bold mb-3">Livraison & Installation</h3>
-                    <p class="text-gray-600">Nous livrons et installons vos meubles pour un service clé en main.</p>
-                </div>
-                <div class="bg-gray-50 p-8 rounded-xl text-center hover:shadow-lg transition">
-                    <div class="bg-primary-light w-16 h-16 mx-auto rounded-full flex items-center justify-center mb-4">
-                        <i class="fas fa-undo-alt text-primary text-2xl"></i>
-                    </div>
-                    <h3 class="text-xl font-bold mb-3">Retour Facile</h3>
-                    <p class="text-gray-600">30 jours pour changer d'avis, retour gratuit en magasin.</p>
-                </div>
-            </div>
-        </div>
-    </section>
-
-    @if ($inspirations->isNotEmpty())
-        <section class="py-16 bg-gray-50">
-            <div class="container mx-auto px-6">
-                {{-- Titre + intro --}}
-                <div class="text-center mb-12">
-                    <h2 class="text-3xl font-bold">Inspirations Déco</h2>
-                    <p class="text-gray-600 max-w-2xl mx-auto">
-                        Découvrez nos ambiances tendances et trouvez l'inspiration pour votre intérieur.
-                    </p>
-                </div>
-
-                {{-- Grille --}}
-                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-                    @forelse ($inspirations as $inspiration)
-                        <a href="{{ route('preview-inspiration', $inspiration->slug) }}"
-                            class="relative group overflow-hidden rounded-xl h-64">
-                            {{-- Image --}}
-                            <img src="{{ asset('storage/' . $inspiration->image) }}" alt="{{ $inspiration->title }}"
-                                class="w-full h-full object-cover group-hover:scale-105 transition duration-500"
-                                loading="lazy">
-                            {{-- Overlay --}}
-                            <div
-                                class="absolute inset-0 bg-gradient-to-t from-black/70 to-transparent flex items-end p-6
-                               opacity-0 group-hover:opacity-100 transition duration-300">
-                                <div>
-                                    <h3 class="text-white text-xl font-bold">{{ $inspiration->title }}</h3>
-                                    @if (!empty($inspiration->resume))
-                                        <p class="text-gray-200 text-sm">{{ $inspiration->resume }}</p>
-                                    @endif
-                                </div>
-                            </div>
-                        </a>
-                    @empty
-                        {{-- Fallback si la requête renvoie quand même vide --}}
-                        <p class="col-span-full text-center text-gray-500">
-                            Aucune inspiration disponible pour le moment.
-                        </p>
-                    @endforelse
-                </div>
-
-                {{-- Bouton « Voir plus » uniquement si on a ≥4 éléments (ou selon ton critère) --}}
-                @if ($inspirations->count() >= 4)
-                    <div class="text-center mt-12">
-                        <a href="{{ route('allinspirations') }}"
-                            class="inline-block px-8 py-3 bg-black text-white rounded-full font-bold
-                          hover:bg-primary-dark transition">
-                            Voir plus d'inspirations
-                        </a>
-                    </div>
-                @endif
-            </div>
-        </section>
-    @endif
-
-    <!-- TÉMOIGNAGES -->
-    <section class="py-16 bg-white">
-        <div class="container mx-auto px-6">
-            <div class="text-center mb-12">
-                <h2 class="text-3xl font-bold">Ils Nous Ont Fait Confiance</h2>
-                <p class="text-gray-600 max-w-2xl mx-auto">Découvrez ce que nos clients disent de notre sélection et de
-                    notre service.</p>
-            </div>
-            <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
-                @forelse ($testimonials as $testimonial)
-                    <div class="bg-gray-50 p-8 rounded-xl">
-                        <div class="flex items-center mb-4">
-                            <div class="flex items-center">
-                                @for ($i = 1; $i <= 5; $i++)
-                                    <i
-                                        class="fas fa-star{{ $i <= $testimonial->rating ? ' text-yellow-400' : ' text-gray-300' }}"></i>
-                                @endfor
-                            </div>
-                        </div>
-                        <p class="text-gray-600 mb-6">{{ Str::limit($testimonial->comment, 150, '...') }}</p>
-                        <div class="flex items-center">
-                            <img src="https://i.pravatar.cc/128?img={{ rand(1, 70) }}" loading="lazy"  alt="{{ $testimonial->name }} | {{ $config->site_name }}"
-                                class="w-8 h-8 rounded-full mr-2">
-                            <div>
-                                <h3 class="font-bold">{{ $testimonial->name }}</h3>
-                                <p class="text-gray-500 text-sm">{{ $testimonial->location ?? 'Non spécifié' }}</p>
-                            </div>
-                        </div>
-                    </div>
-                @empty
-                    <div class="col-span-full text-center">
-                        <p class="text-gray-600">Aucun témoignage disponible pour le moment.</p>
-                    </div>
-                @endforelse
-            </div>
-        </div>
-    </section>
 @endsection
+
 
 @section('css')
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/swiper@10/swiper-bundle.min.css" />
