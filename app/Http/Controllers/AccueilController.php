@@ -92,7 +92,7 @@ public function ProduitShow($slug)
             ->get();
     }
 
-    $images = $product->images ? json_decode($product->images, true) : [];
+    $images = $product->images ?? [];
 
     return view('front-office.produit.index', [
         'product' => $product,
