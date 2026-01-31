@@ -13,7 +13,7 @@ use App\Models\Configuration;
 
 class AccueilController extends Controller
 {
-   public function nouveautes()
+    public function nouveautes()
     {
         $latestProducts = Product::where('is_active', true)->latest()
             ->take(10)
@@ -31,7 +31,6 @@ class AccueilController extends Controller
 
 
 
-
         return view('front-office.acceuil.index', [
             'latestProducts' => $latestProducts,
             'latestCategories' => $latestCategorys,
@@ -39,6 +38,7 @@ class AccueilController extends Controller
             'testimonials' => $testimonials
         ]);
     }
+
     public function InspirationShow($slug)
     {
         $inspiration = Inspiration::where('slug', $slug)
@@ -124,28 +124,18 @@ public function ProduitShow($slug)
             ->get();
     }
 
-  public function AllProduits()
-{
-    $config = Configuration::first();
+    public function AllProduits()
+    {
+        $config = Configuration::first();
+        return view('front-office.produit.allproduits', [
+            'products' => Product::active()->latest()->paginate(12),
+            'categories' => $this->sidebarCategories(),
+            'selectedCategory' => null,
+            'freeShippingLimit' => $config?->free_shipping_threshold,
+                    'config'            => $config,
 
-    $products = Product::active()
-        ->withCount(['avis as review_count' => function($q) {
-            $q->where('approved', true);
-        }])
-        ->withAvg(['avis as average_rating' => function($q) {
-            $q->where('approved', true);
-        }, 'rating'])
-        ->latest()
-        ->paginate(12);
-
-    return view('front-office.produit.allproduits', [
-        'products'          => $products,
-        'categories'        => $this->sidebarCategories(),
-        'selectedCategory'  => null,
-        'freeShippingLimit' => $config?->free_shipping_threshold,
-        'config'            => $config,
-    ]);
-}
+        ]);
+    }
 
     public function CategorieProduits($slug)
     {
