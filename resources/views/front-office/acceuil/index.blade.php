@@ -30,7 +30,7 @@
     <meta name="author" content="Paradis Déco">
     <meta name="publisher" content="Paradis Déco">
 
-    <link rel="canonical" href="{{ config('app.url', 'https://example.com') }}">
+    <link rel="canonical" href="{{ url()->current() }}">
     <link rel="alternate" href="{{ url()->current() }}" hreflang="fr-tn">
     <link rel="alternate" href="{{ url()->current() }}" hreflang="x-default">
 
@@ -199,35 +199,35 @@
                         </div>
 
                         <!-- Prix & action -->
-                        <div class="flex justify-between items-center mt-auto">
-                            <div itemprop="offers" itemscope itemtype="https://schema.org/Offer">
-                                <meta itemprop="priceCurrency" content="TND">
-                                <meta itemprop="price" content="{{ number_format($item->price, 2, '.', '') }}">
-                                <meta itemprop="availability" content="{{ $item->stock > 0 ? 'https://schema.org/InStock' : 'https://schema.org/OutOfStock' }}">
-                                <meta itemprop="priceValidUntil" content="{{ now()->addYear()->format('Y-m-d') }}">
-                                <link itemprop="url" href="{{ route('preview-article', $item->slug) }}">
+                      <div itemprop="offers" itemscope itemtype="https://schema.org/Offer">
+                    <meta itemprop="priceCurrency" content="TND">
+                    <meta itemprop="price" content="{{ number_format($item->price, 2, '.', '') }}">
+                    <meta itemprop="availability"
+                        content="{{ $item->stock > 0 ? 'https://schema.org/InStock' : 'https://schema.org/OutOfStock' }}">
+                    <meta itemprop="priceValidUntil" content="{{ now()->addYear()->format('Y-m-d') }}">
+                    <link itemprop="url" href="{{ route('preview-article', $item->slug) }}">
 
-                                <p class="text-black font-bold text-xl">
-                                    <span>{{ number_format($item->price, 2) }}</span> DT
-                                </p>
+                    <!-- ✅ POLITIQUE DE RETOUR (OBLIGATOIRE) -->
+                            <div itemprop="hasMerchantReturnPolicy"
+                                itemscope
+                                itemtype="https://schema.org/MerchantReturnPolicy">
+
+                                <meta itemprop="returnPolicyCategory"
+                                    content="https://schema.org/MerchantReturnFiniteReturnWindow">
+                                <meta itemprop="merchantReturnDays" content="30">
+                                <meta itemprop="returnMethod"
+                                    content="https://schema.org/ReturnByMail">
+                                <meta itemprop="returnFees"
+                                    content="https://schema.org/FreeReturn">
+                                <meta itemprop="applicableCountry" content="TN">
                             </div>
 
-                            <button aria-label="Ajouter {{ $item->name }} au panier"
-                                data-id="{{ $item->id }}"
-                                data-name="{{ $item->name }}"
-                                data-price="{{ $item->price ?? 0 }}"
-                                data-image="{{ asset('storage/' . $item->image_avant) }}"
-                                data-stock="{{ $item->stock }}"
-                                class="flex items-center gap-2 bg-black hover:bg-gray-800 text-white px-4 py-2 rounded-lg transition transform hover:scale-105"
-                                @if ($item->stock == 0) disabled @endif
-                                onclick="addToCart(this)">
-                                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
-                                </svg>
-                                Ajouter
-                            </button>
+                            <p class="text-black font-bold text-xl">
+                                {{ number_format($item->price, 2) }} DT
+                            </p>
                         </div>
-                        
+
+
                     </div>
 
                     <!-- SKU et Brand (cachés) -->
