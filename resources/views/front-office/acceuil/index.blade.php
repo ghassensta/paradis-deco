@@ -6,19 +6,6 @@
 
 @section('meta')
     @php
-        // — Mots‑clés principaux
-        $keywords = [
-            'décoration intérieure Tunisie',
-            'boutique déco en ligne',
-            'vente décoration maison Tunisie',
-            'meubles tunisiens', // etc. (10 maxi)
-            'luminaires Tunisie',
-            'tapis artisanaux Tunisie',
-            'accessoires maison',
-            'artisanat tunisien',
-            'ameublement moderne',
-            'cadeaux maison Tunisie',
-        ];
         // — Image Open Graph
         $ogImage = asset('images/og/paradis-deco.jpg');
     @endphp
@@ -26,7 +13,8 @@
     <meta name="description"
         content="Paradis Déco, boutique déco n°1 en Tunisie : meubles, luminaires, tapis et accessoires artisanaux pour un intérieur moderne et chaleureux. Livraison rapide partout en Tunisie.">
 
-    <meta name="keywords" content="{{ implode(', ', $keywords) }}">
+<meta name="keywords"
+content="décoration intérieure Tunisie, boutique déco en ligne, meubles Tunisie, luminaires Tunisie, tapis artisanaux, accessoires maison, artisanat tunisien, ameublement moderne">
     <meta name="author" content="Paradis Déco">
     <meta name="publisher" content="Paradis Déco">
 
@@ -154,11 +142,32 @@
                 <!-- wrapper Swiper -->
                 <div class="swiper mySwiper">
                     <div class="swiper-wrapper">
-                        @forelse ($latestProducts as $item)
-                            @if ($item->is_active)
-                                <div class="swiper-slide">
+
                                     <!-- CARTE PRODUIT -->
-                <article itemscope itemtype="https://schema.org/Product" class="bg-white rounded-2xl shadow-lg overflow-hidden group hover:shadow-xl transition-all duration-300 hover:-translate-y-1 h-[460px] flex flex-col justify-between">
+                <article class="bg-white rounded-2xl shadow-lg overflow-hidden group hover:shadow-xl transition-all duration-300 hover:-translate-y-1 h-[460px] flex flex-col justify-between">
+                  <div itemprop="seller"
+                        itemscope
+                        itemtype="https://schema.org/Organization"
+                        style="display:none;">
+                        <meta itemprop="name" content="Paradis Déco">
+                        <meta itemprop="url" content="{{ url('/') }}">
+                    </div>
+
+                    @forelse ($latestProducts as $item)
+                            @if ($item->is_active)
+                                <div class="swiper-slide" itemscope itemtype="https://schema.org/Product">
+                                    @if ($item->total_reviews > 0)
+                            <div itemprop="aggregateRating"
+                                itemscope
+                                itemtype="https://schema.org/AggregateRating"
+                                style="display:none;">
+
+                                <meta itemprop="ratingValue" content="{{ $item->average_rating }}">
+                                <meta itemprop="reviewCount" content="{{ $item->total_reviews }}">
+                                <meta itemprop="bestRating" content="5">
+                                <meta itemprop="worstRating" content="1">
+                            </div>
+                        @endif
                     <!-- Image -->
                     <div class="relative h-64 overflow-hidden flex items-center justify-center bg-gray-100">
                         <a href="{{ route('preview-article', $item->slug) }}" title="{{ $item->meta_title ?? $item->name }}" class="block w-full h-full">
@@ -207,7 +216,6 @@
                     <meta itemprop="priceValidUntil" content="{{ now()->addYear()->format('Y-m-d') }}">
                     <link itemprop="url" href="{{ route('preview-article', $item->slug) }}">
 
-                    <!-- ✅ POLITIQUE DE RETOUR (OBLIGATOIRE) -->
                             <div itemprop="hasMerchantReturnPolicy"
                                 itemscope
                                 itemtype="https://schema.org/MerchantReturnPolicy">
