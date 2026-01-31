@@ -13,12 +13,23 @@ use App\Models\Configuration;
 
 class AccueilController extends Controller
 {
-    public function nouveautes()
+   public function nouveautes()
     {
-       $latestProducts = Product::where('is_active', true)
-    ->withCount(['avis as review_count' => fn($q) => $q->where('approved', true)])
-    ->withAvg(['avis as average_rating' => fn($q) => $q->where('approved', true)], 'rating')
-    ->latest()->take(10)->get();
+        $latestProducts = Product::where('is_active', true)->latest()
+            ->take(10)
+            ->get();
+
+        $latestCategorys = Category::where('is_active', true)->latest()->take(4)->get();
+
+        $inspirations = Inspiration::where('is_active', true)->latest()->take(4)->get();
+
+        $testimonials = Avis::where('approved', true)
+            ->with('product:id,name')
+            ->latest()
+            ->take(3)
+            ->get();
+
+
 
 
         return view('front-office.acceuil.index', [
@@ -28,7 +39,6 @@ class AccueilController extends Controller
             'testimonials' => $testimonials
         ]);
     }
-
     public function InspirationShow($slug)
     {
         $inspiration = Inspiration::where('slug', $slug)

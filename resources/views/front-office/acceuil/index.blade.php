@@ -50,62 +50,6 @@
     <meta name="twitter:description" content="Boutique déco en ligne n°1 en Tunisie. Livraison rapide.">
     <meta name="twitter:image" content="{{ $ogImage }}">
 
-    {{-- JSON-LD Schema.org (tout le balisage structuré ici) --}}
-  <script type="application/ld+json">
-{
-    "@context": "https://schema.org",
-    "@type": "Product",
-    "name": {{ json_encode($product->name) }},
-    "image": "{{ asset('storage/' . ($product->image_avant ?? ($product->images[0] ?? ''))) }}",
-    "description": {{ json_encode(Str::limit(strip_tags($product->description ?? ''), 200)) }},
-    "sku": "{{ $product->id }}",
-    "brand": {
-        "@type": "Brand",
-        "name": "Paradis Déco"
-    },
-    "offers": {
-        "@type": "Offer",
-        "url": "{{ route('preview-article', $product->slug) }}",
-        "priceCurrency": "TND",
-        "price": "{{ number_format($product->price, 2, '.', '') }}",
-        "availability": "{{ $product->stock > 0 ? 'https://schema.org/InStock' : 'https://schema.org/OutOfStock' }}",
-        "priceValidUntil": "{{ now()->addMonths(6)->format('Y-m-d') }}",
-        "seller": {
-            "@type": "Organization",
-            "name": "Paradis Déco"
-        }
-    }
-    @if($totalReviews > 0)
-    ,"aggregateRating": {
-        "@type": "AggregateRating",
-        "ratingValue": "{{ number_format($averageRating, 1, '.', '') }}",
-        "reviewCount": "{{ $totalReviews }}",
-        "bestRating": "5",
-        "worstRating": "1"
-    }
-    @endif
-    @if($reviews->isNotEmpty())
-    ,"review": [
-        @foreach($reviews->take(5) as $review)  // Limite à 5 pour ne pas alourdir
-        {
-            "@type": "Review",
-            "reviewRating": {
-                "@type": "Rating",
-                "ratingValue": "{{ $review->rating }}",
-                "bestRating": "5"
-            },
-            "author": {
-                "@type": "Person",
-                "name": {{ json_encode($review->name ?? 'Client anonyme') }}
-            },
-            "datePublished": "{{ $review->created_at->format('Y-m-d') }}",
-            "reviewBody": {{ json_encode(Str::limit($review->comment ?? '', 300)) }}
-        }{{ !$loop->last ? ',' : '' }}
-        @endforeach
-    ]
-    @endif
-}
-</script>
 @endsection
 
 @section('content')
