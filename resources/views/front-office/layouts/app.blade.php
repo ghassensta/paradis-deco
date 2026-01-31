@@ -6,8 +6,24 @@
     <title>@yield('title', 'Paradis Déco | Boutique déco Tunisie')</title>
 
     <!-- Fonts / icône -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link rel="dns-prefetch" href="//fonts.googleapis.com">
+    <link rel="dns-prefetch" href="//fonts.gstatic.com">
+
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+
+    <link rel="preconnect" href="https://cdnjs.cloudflare.com" crossorigin>
+    <link rel="dns-prefetch" href="//cdnjs.cloudflare.com">
+    <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
+    <link rel="dns-prefetch" href="//cdn.jsdelivr.net">
+    <link rel="preconnect" href="https://www.googletagmanager.com" crossorigin>
+    <link rel="dns-prefetch" href="//www.googletagmanager.com">
+
+    <link rel="preload" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" as="style" onload="this.onload=null;this.rel='stylesheet'">
+    <noscript>
+        <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    </noscript>
     <link rel="icon" type="image/x-icon" href="{{ asset('assets/img/cover-image-removebg-preview.png') }}">
     <meta name="csrf-token" content="{{ csrf_token() }}">
 
@@ -20,6 +36,10 @@
         $supportPhone   = $config->support_phone ?? '+216 73 000 000';
         $addressText    = $config->address ?? "Rue Habib Thameur, M'saken 4070, Sousse, Tunisie";
     @endphp
+
+    @if(!empty($config->homepage_banner))
+        <link rel="preload" as="image" href="{{ asset('storage/' . $config->homepage_banner) }}" fetchpriority="high">
+    @endif
 
     <meta name="description" content="{{ $siteDesc }}">
 
@@ -85,9 +105,10 @@
 <script>
   window.dataLayer = window.dataLayer || [];
   function gtag(){dataLayer.push(arguments);}
-  gtag('js', new Date());
-
-  gtag('config', 'G-404BKDSJRD');
+  window.addEventListener('load', function () {
+    gtag('js', new Date());
+    gtag('config', 'G-404BKDSJRD');
+  });
 </script>
 </head>
 

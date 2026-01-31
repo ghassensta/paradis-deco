@@ -202,7 +202,7 @@
                     @endphp
 
                     <img src="{{ $bannerUrl }}" alt="Bannière {{ $config->site_name }}"
-                        class="w-full h-full object-cover" loading="lazy" />
+                        class="w-full h-full object-cover" loading="eager" fetchpriority="high" decoding="async" />
 
                     <div class="absolute inset-0 bg-black/40 flex flex-col justify-center items-center text-center px-6">
                         <h1 class="text-4xl md:text-6xl font-extrabold text-white drop-shadow-lg mb-4 animate-fade-in">
@@ -294,7 +294,11 @@
                                                 <img src="{{ asset('storage/' . $item->image_avant) }}"
                                                     alt="{{ $item->name }}"
                                                     class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-                                                    loading="lazy">
+                                                    loading="lazy" width="500" height="320" decoding="async"
+                                                    sizes="(min-width: 1024px) 25vw,
+                                                           (min-width: 768px) 33vw,
+                                                           (min-width: 640px) 50vw,
+                                                           80vw">
                                             </a>
 
                                             <!-- Badges -->
@@ -426,7 +430,11 @@
                             {{-- Image --}}
                             <img src="{{ asset('storage/' . $inspiration->image) }}" alt="{{ $inspiration->title }}"
                                 class="w-full h-full object-cover group-hover:scale-105 transition duration-500"
-                                loading="lazy">
+                                loading="lazy" width="500" height="320" decoding="async"
+                                sizes="(min-width: 1024px) 25vw,
+                                       (min-width: 768px) 33vw,
+                                       (min-width: 640px) 50vw,
+                                       100vw">
                             {{-- Overlay --}}
                             <div
                                 class="absolute inset-0 bg-gradient-to-t from-black/70 to-transparent flex items-end p-6
@@ -735,7 +743,7 @@
 @endsection
 
 @section('js')
-    <script src="https://cdn.jsdelivr.net/npm/swiper@10/swiper-bundle.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/swiper@10/swiper-bundle.min.js" defer></script>
     <script>
         document.addEventListener('DOMContentLoaded', () => {
             new Swiper('.mySwiper', {
