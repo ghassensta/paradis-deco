@@ -51,128 +51,61 @@
     <meta name="twitter:image" content="{{ $ogImage }}">
 
     {{-- JSON-LD Schema.org (tout le balisage structuré ici) --}}
-    <script type="application/ld+json">
-    {
-        "@context": "https://schema.org",
-        "@graph": [
-            {
-                "@type": "Organization",
-                "@id": "{{ url('/') }}/#organization",
-                "name": "{{ $config->site_name ?? 'Paradis Déco' }}",
-                "url": "{{ url('/') }}",
-                "logo": "{{ $ogImage }}",
-                "sameAs": [
-                    "https://www.facebook.com/paradisdeco.tn",
-                    "https://www.instagram.com/paradisdeco.tn"
-                ]
-            },
-            {
-                "@type": "WebSite",
-                "@id": "{{ url('/') }}/#website",
-                "url": "{{ url('/') }}",
-                "name": "{{ $config->site_name ?? 'Paradis Déco' }}",
-                "publisher": {
-                    "@id": "{{ url('/') }}/#organization"
-                }
-            },
-            {
-                "@type": "WebPage",
-                "@id": "{{ url()->current() }}/#webpage",
-                "url": "{{ url()->current() }}",
-                "name": "Paradis Déco – Boutique déco en ligne Tunisie",
-                "isPartOf": {
-                    "@id": "{{ url('/') }}/#website"
-                },
-                "breadcrumb": {
-                    "@id": "{{ url()->current() }}/#breadcrumb"
-                }
-            },
-            {
-                "@type": "BreadcrumbList",
-                "@id": "{{ url()->current() }}/#breadcrumb",
-                "itemListElement": [
-                    {
-                        "@type": "ListItem",
-                        "position": 1,
-                        "name": "Accueil",
-                        "item": "{{ url('/') }}"
-                    }
-                ]
-            },
-            {
-                "@type": "ItemList",
-                "name": "Nouveautés – Produits en vedette",
-                "itemListElement": [
-                    @forelse ($latestProducts as $index => $item)
-                        @if ($item->is_active)
-                            {
-                                "@type": "ListItem",
-                                "position": {{ $index + 1 }},
-                                "item": {
-                                    "@type": "Product",
-                                    "@id": "{{ route('preview-article', $item->slug) }}/#product",
-                                    "name": {{ json_encode($item->name) }},
-                                    "image": "{{ asset('storage/' . $item->image_avant) }}",
-                                    "description": {{ json_encode(Str::limit(strip_tags($item->description), 180)) }},
-                                    "sku": "PROD-{{ $item->id }}",
-                                    "brand": {
-                                        "@type": "Brand",
-                                        "name": "{{ $config->site_name ?? 'Paradis Déco' }}"
-                                    },
-                                    "offers": {
-                                        "@type": "Offer",
-                                        "url": "{{ route('preview-article', $item->slug) }}",
-                                        "priceCurrency": "TND",
-                                        "price": "{{ number_format($item->price, 2, '.', '') }}",
-                                        "availability": "{{ $item->stock > 0 ? 'https://schema.org/InStock' : 'https://schema.org/OutOfStock' }}",
-                                        "priceValidUntil": "{{ now()->addYear()->format('Y-m-d') }}",
-                                        "seller": {
-                                            "@type": "Organization",
-                                            "name": "{{ $config->site_name ?? 'Paradis Déco' }}"
-                                        }
-                                    }
-                                    @if (isset($item->average_rating) && $item->review_count > 0)
-                                    ,"aggregateRating": {
-                                        "@type": "AggregateRating",
-                                        "ratingValue": "{{ $item->average_rating }}",
-                                        "reviewCount": "{{ $item->review_count }}"
-                                    }
-                                    @endif
-                                }
-                            }{{ !$loop->last ? ',' : '' }}
-                        @endif
-                    @empty
-                        /* Aucun produit */
-                    @endforelse
-                ]
-            }
-            @if ($testimonials->isNotEmpty())
-            ,{
-                "@type": "Organization",
-                "@id": "{{ url('/') }}/#organization",
-                "review": [
-                    @foreach ($testimonials as $testimonial)
-                    {
-                        "@type": "Review",
-                        "reviewRating": {
-                            "@type": "Rating",
-                            "ratingValue": "{{ $testimonial->rating }}",
-                            "bestRating": "5"
-                        },
-                        "author": {
-                            "@type": "Person",
-                            "name": {{ json_encode($testimonial->name) }}
-                        },
-                        "reviewBody": {{ json_encode(Str::limit($testimonial->comment, 300)) }},
-                        "datePublished": "{{ $testimonial->created_at->format('Y-m-d') }}"
-                    }{{ !$loop->last ? ',' : '' }}
-                    @endforeach
-                ]
-            }
-            @endif
-        ]
+  <script type="application/ld+json">
+{
+    "@context": "https://schema.org",
+    "@type": "Product",
+    "name": {{ json_encode($product->name) }},
+    "image": "{{ asset('storage/' . ($product->image_avant ?? ($product->images[0] ?? ''))) }}",
+    "description": {{ json_encode(Str::limit(strip_tags($product->description ?? ''), 200)) }},
+    "sku": "{{ $product->id }}",
+    "brand": {
+        "@type": "Brand",
+        "name": "Paradis Déco"
+    },
+    "offers": {
+        "@type": "Offer",
+        "url": "{{ route('preview-article', $product->slug) }}",
+        "priceCurrency": "TND",
+        "price": "{{ number_format($product->price, 2, '.', '') }}",
+        "availability": "{{ $product->stock > 0 ? 'https://schema.org/InStock' : 'https://schema.org/OutOfStock' }}",
+        "priceValidUntil": "{{ now()->addMonths(6)->format('Y-m-d') }}",
+        "seller": {
+            "@type": "Organization",
+            "name": "Paradis Déco"
+        }
     }
-    </script>
+    @if($totalReviews > 0)
+    ,"aggregateRating": {
+        "@type": "AggregateRating",
+        "ratingValue": "{{ number_format($averageRating, 1, '.', '') }}",
+        "reviewCount": "{{ $totalReviews }}",
+        "bestRating": "5",
+        "worstRating": "1"
+    }
+    @endif
+    @if($reviews->isNotEmpty())
+    ,"review": [
+        @foreach($reviews->take(5) as $review)  // Limite à 5 pour ne pas alourdir
+        {
+            "@type": "Review",
+            "reviewRating": {
+                "@type": "Rating",
+                "ratingValue": "{{ $review->rating }}",
+                "bestRating": "5"
+            },
+            "author": {
+                "@type": "Person",
+                "name": {{ json_encode($review->name ?? 'Client anonyme') }}
+            },
+            "datePublished": "{{ $review->created_at->format('Y-m-d') }}",
+            "reviewBody": {{ json_encode(Str::limit($review->comment ?? '', 300)) }}
+        }{{ !$loop->last ? ',' : '' }}
+        @endforeach
+    ]
+    @endif
+}
+</script>
 @endsection
 
 @section('content')

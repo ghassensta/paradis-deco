@@ -15,20 +15,10 @@ class AccueilController extends Controller
 {
     public function nouveautes()
     {
-        $latestProducts = Product::where('is_active', true)->latest()
-            ->take(10)
-            ->get();
-
-        $latestCategorys = Category::where('is_active', true)->latest()->take(4)->get();
-
-        $inspirations = Inspiration::where('is_active', true)->latest()->take(4)->get();
-
-        $testimonials = Avis::where('approved', true)
-            ->with('product:id,name')
-            ->latest()
-            ->take(3)
-            ->get();
-
+       $latestProducts = Product::where('is_active', true)
+    ->withCount(['avis as review_count' => fn($q) => $q->where('approved', true)])
+    ->withAvg(['avis as average_rating' => fn($q) => $q->where('approved', true)], 'rating')
+    ->latest()->take(10)->get();
 
 
         return view('front-office.acceuil.index', [
@@ -124,18 +114,28 @@ public function ProduitShow($slug)
             ->get();
     }
 
-    public function AllProduits()
-    {
-        $config = Configuration::first();
-        return view('front-office.produit.allproduits', [
-            'products' => Product::active()->latest()->paginate(12),
-            'categories' => $this->sidebarCategories(),
-            'selectedCategory' => null,
-            'freeShippingLimit' => $config?->free_shipping_threshold,
-                    'config'            => $config,
+  public function AllProduits()
+{
+    $config = Configuration::first();
 
-        ]);
-    }
+    $products = Product::active()
+        ->withCount(['avis as review_count' => function($q) {
+            $q->where('approved', true);
+        }])
+        ->withAvg(['avis as average_rating' => function($q) {
+            $q->where('approved', true);
+        }, 'rating'])
+        ->latest()
+        ->paginate(12);
+
+    return view('front-office.produit.allproduits', [
+        'products'          => $products,
+        'categories'        => $this->sidebarCategories(),
+        'selectedCategory'  => null,
+        'freeShippingLimit' => $config?->free_shipping_threshold,
+        'config'            => $config,
+    ]);
+}
 
     public function CategorieProduits($slug)
     {

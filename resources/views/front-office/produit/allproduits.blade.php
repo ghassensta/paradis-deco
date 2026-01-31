@@ -20,98 +20,108 @@
     <link rel="alternate" href="{{ url()->current() }}" hreflang="x-default">
 
     <!-- JSON-LD structuré – Meilleure pratique 2025/2026 -->
-    <script type="application/ld+json">
-    {
-        "@context": "https://schema.org",
-        "@graph": [
-            {
-                "@type": "WebPage",
-                "@id": "{{ url()->current() }}/#webpage",
-                "url": "{{ url()->current() }}",
-                "name": "Tous nos produits | Paradis Déco",
-                "description": "Collection complète de décoration et meubles artisanaux en Tunisie",
-                "isPartOf": {
-                    "@type": "WebSite",
-                    "@id": "{{ url('/') }}/#website",
-                    "name": "Paradis Déco",
-                    "url": "{{ url('/') }}"
-                },
-                "breadcrumb": {
-                    "@id": "{{ url()->current() }}/#breadcrumb"
-                },
-                "inLanguage": "fr-TN"
+   <script type="application/ld+json">
+{
+    "@context": "https://schema.org",
+    "@graph": [
+        {
+            "@type": "WebPage",
+            "@id": "{{ url()->current() }}/#webpage",
+            "url": "{{ url()->current() }}",
+            "name": "Tous nos produits | Paradis Déco",
+            "description": "Découvrez notre collection complète de meubles, luminaires, tapis et accessoires artisanaux pour la maison en Tunisie.",
+            "isPartOf": {
+                "@type": "WebSite",
+                "@id": "{{ url('/') }}/#website",
+                "name": "Paradis Déco",
+                "url": "{{ url('/') }}"
             },
-            {
-                "@type": "BreadcrumbList",
-                "@id": "{{ url()->current() }}/#breadcrumb",
-                "itemListElement": [
+            "breadcrumb": {
+                "@id": "{{ url()->current() }}/#breadcrumb"
+            },
+            "inLanguage": "fr-TN"
+        },
+        {
+            "@type": "BreadcrumbList",
+            "@id": "{{ url()->current() }}/#breadcrumb",
+            "itemListElement": [
+                {
+                    "@type": "ListItem",
+                    "position": 1,
+                    "name": "Accueil",
+                    "item": "{{ url('/') }}"
+                },
+                {
+                    "@type": "ListItem",
+                    "position": 2,
+                    "name": "Produits",
+                    "item": "{{ url()->current() }}"
+                }
+            ]
+        },
+        {
+            "@type": "ItemList",
+            "@id": "{{ url()->current() }}/#productlist",
+            "name": "Liste des produits disponibles chez Paradis Déco",
+            "numberOfItems": {{ $products->total() }},
+            "itemListElement": [
+                @forelse($products as $index => $product)
+                    @php
+                        $position = $products->firstItem() + $index;
+                        $image = $product->image_avant ?? ($product->images[0] ?? 'https://via.placeholder.com/400?text=Paradis+Deco');
+                        $desc = $product->description
+                            ? strip_tags(Str::limit($product->description, 180))
+                            : 'Produit décoratif moderne et élégant disponible chez Paradis Déco.';
+                        $availability = $product->stock > 0
+                            ? 'https://schema.org/InStock'
+                            : 'https://schema.org/OutOfStock';
+                    @endphp
                     {
                         "@type": "ListItem",
-                        "position": 1,
-                        "name": "Accueil",
-                        "item": "{{ url('/') }}"
-                    },
-                    {
-                        "@type": "ListItem",
-                        "position": 2,
-                        "name": "Produits",
-                        "item": "{{ url()->current() }}"
-                    }
-                ]
-            },
-            {
-                "@type": "ItemList",
-                "@id": "{{ url()->current() }}/#productlist",
-                "name": "Liste des produits disponibles chez Paradis Déco",
-                "numberOfItems": {{ $products->total() }},
-                "itemListElement": [
-                    @forelse($products as $index => $product)
-                        @php
-                            $position = $products->firstItem() + $index;
-                            $image = $product->image_avant ?? ($product->images[0] ?? 'https://via.placeholder.com/400?text=Paradis+Deco');
-                            $desc = $product->description
-                                ? strip_tags(Str::limit($product->description, 160))
-                                : 'Produit décoratif moderne et élégant disponible chez Paradis Déco.';
-                            $availability = $product->stock > 0
-                                ? 'https://schema.org/InStock'
-                                : 'https://schema.org/OutOfStock';
-                        @endphp
-                        {
-                            "@type": "ListItem",
-                            "position": {{ $position }},
-                            "item": {
-                                "@type": "Product",
-                                "@id": "{{ route('preview-article', $product->slug) }}/#product",
+                        "position": {{ $position }},
+                        "item": {
+                            "@type": "Product",
+                            "@id": "{{ route('preview-article', $product->slug) }}/#product",
+                            "url": "{{ route('preview-article', $product->slug) }}",
+                            "name": {{ json_encode($product->name) }},
+                            "image": "{{ asset('storage/' . $image) }}",
+                            "description": {{ json_encode($desc) }},
+                            "sku": "{{ $product->id }}",
+                            "brand": {
+                                "@type": "Brand",
+                                "name": "Paradis Déco"
+                            },
+                            "offers": {
+                                "@type": "Offer",
                                 "url": "{{ route('preview-article', $product->slug) }}",
-                                "name": {{ json_encode($product->name) }},
-                                "image": "{{ asset('storage/' . $image) }}",
-                                "description": {{ json_encode($desc) }},
-                                "sku": "{{ $product->id }}",
-                                "brand": {
-                                    "@type": "Brand",
+                                "priceCurrency": "TND",
+                                "price": "{{ number_format($product->price, 2, '.', '') }}",
+                                "availability": "{{ $availability }}",
+                                "priceValidUntil": "{{ now()->addMonths(6)->format('Y-m-d') }}",
+                                "seller": {
+                                    "@type": "Organization",
                                     "name": "Paradis Déco"
-                                },
-                                "offers": {
-                                    "@type": "Offer",
-                                    "url": "{{ route('preview-article', $product->slug) }}",
-                                    "priceCurrency": "TND",
-                                    "price": "{{ number_format($product->price, 2, '.', '') }}",
-                                    "availability": "{{ $availability }}",
-                                    "seller": {
-                                        "@type": "Organization",
-                                        "name": "Paradis Déco"
-                                    }
                                 }
                             }
-                        }{{ !$loop->last ? ',' : '' }}
-                    @empty
-                        /* Aucun produit sur cette page */
-                    @endforelse
-                ]
-            }
-        ]
-    }
-    </script>
+                            @if(isset($product->average_rating) && $product->review_count > 0)
+                            ,"aggregateRating": {
+                                "@type": "AggregateRating",
+                                "ratingValue": "{{ number_format($product->average_rating, 1, '.', '') }}",
+                                "reviewCount": "{{ $product->review_count }}",
+                                "bestRating": "5",
+                                "worstRating": "1"
+                            }
+                            @endif
+                        }
+                    }{{ $loop->last ? '' : ',' }}
+                @empty
+                    // Aucun produit sur cette page
+                @endforelse
+            ]
+        }
+    ]
+}
+</script>
 @endsection
 
 @section('content')
