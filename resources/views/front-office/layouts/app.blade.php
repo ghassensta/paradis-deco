@@ -38,7 +38,22 @@
     @endphp
 
     @if(!empty($config->homepage_banner))
-        <link rel="preload" as="image" href="{{ asset('storage/' . $config->homepage_banner) }}" fetchpriority="high">
+        @php
+            $bannerPath = $config->homepage_banner; // e.g. banners/hero-banner.jpg
+            $bannerDir  = trim(dirname($bannerPath), '/.');
+            $bannerFile = pathinfo($bannerPath, PATHINFO_FILENAME); // hero-banner
+            $bannerBase = ($bannerDir && $bannerDir !== '.') ? $bannerDir . '/' . $bannerFile : $bannerFile;
+        @endphp
+        <link rel="preload"
+              as="image"
+              fetchpriority="high"
+              href="{{ asset('storage/' . $bannerBase . '-640.jpg') }}"
+              imagesrcset="{{ asset('storage/' . $bannerBase . '-320.webp') }} 320w,
+                           {{ asset('storage/' . $bannerBase . '-640.webp') }} 640w,
+                           {{ asset('storage/' . $bannerBase . '-960.webp') }} 960w"
+              imagesizes="(max-width: 768px) 100vw,
+                           (max-width: 1280px) 100vw,
+                           100vw">
     @endif
 
     <meta name="description" content="{{ $siteDesc }}">

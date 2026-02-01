@@ -194,15 +194,40 @@
                 <!-- Slide 1 -->
                 <div class="relative w-full">
                     @php
-                        // Si $config->homepage_banner existe → on génère l’URL publique « storage/... »
+                        // Si $config->homepage_banner existe → on utilise les variantes responsives générées
                         // Sinon on utilise l’image de secours Unsplash
-                        $bannerUrl = $config->homepage_banner
+                        $bannerFallback = 'https://images.unsplash.com/photo-1560448204-e02f11c3d0e2?auto=format&fit=crop&w=1740&q=80';
+                        $bannerUrl      = $config->homepage_banner
                             ? asset('storage/' . $config->homepage_banner)
-                            : 'https://images.unsplash.com/photo-1560448204-e02f11c3d0e2?auto=format&fit=crop&w=1740&q=80';
+                            : $bannerFallback;
+
+                        $bannerDir  = $config->homepage_banner ? trim(dirname($config->homepage_banner), '/.') : null;
+                        $bannerFile = $config->homepage_banner ? pathinfo($config->homepage_banner, PATHINFO_FILENAME) : null;
+                        $bannerBase = ($bannerDir && $bannerDir !== '.') ? $bannerDir . '/' . $bannerFile : $bannerFile;
                     @endphp
 
-                    <img src="{{ $bannerUrl }}" alt="Bannière {{ $config->site_name }}"
-                        class="w-full h-full object-cover" loading="eager" fetchpriority="high" decoding="async" />
+                    @if($config->homepage_banner && $bannerBase)
+                        <picture>
+                            <source type="image/webp"
+                                    srcset="{{ asset('storage/' . $bannerBase . '-320.webp') }} 320w,
+                                            {{ asset('storage/' . $bannerBase . '-640.webp') }} 640w,
+                                            {{ asset('storage/' . $bannerBase . '-960.webp') }} 960w"
+                                    sizes="(max-width: 768px) 100vw,
+                                           (max-width: 1280px) 100vw,
+                                           100vw">
+                            <img src="{{ asset('storage/' . $bannerBase . '-640.jpg') }}" alt="Bannière {{ $config->site_name }}"
+                                 srcset="{{ asset('storage/' . $bannerBase . '-320.jpg') }} 320w,
+                                         {{ asset('storage/' . $bannerBase . '-640.jpg') }} 640w,
+                                         {{ asset('storage/' . $bannerBase . '-960.jpg') }} 960w"
+                                 sizes="(max-width: 768px) 100vw,
+                                        (max-width: 1280px) 100vw,
+                                        100vw"
+                                 class="w-full h-full object-cover" loading="eager" fetchpriority="high" decoding="async" />
+                        </picture>
+                    @else
+                        <img src="{{ $bannerUrl }}" alt="Bannière {{ $config->site_name }}"
+                             class="w-full h-full object-cover" loading="eager" fetchpriority="high" decoding="async" />
+                    @endif
 
                     <div class="absolute inset-0 bg-black/40 flex flex-col justify-center items-center text-center px-6">
                         <h1 class="text-4xl md:text-6xl font-extrabold text-white drop-shadow-lg mb-4 animate-fade-in">
