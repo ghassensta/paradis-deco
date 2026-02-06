@@ -19,7 +19,7 @@
     <link rel="alternate" href="{{ url()->current() }}" hreflang="fr-tn">
     <link rel="alternate" href="{{ url()->current() }}" hreflang="x-default">
 
-  
+
 @endsection
 
 @section('content')
@@ -143,41 +143,15 @@
                         @forelse($products as $product)
                             <article class="bg-white rounded-xl overflow-hidden group transition-all duration-300 hover:shadow-lg border border-gray-100 hover:border-gray-200">
                                 <div class="relative overflow-hidden aspect-square">
-                                    @php
-                                        $baseImagePath = $product->image_avant ?? ($product->images[0] ?? null);
-                                        $imageDir      = $baseImagePath ? trim(dirname($baseImagePath), '/.') : null;
-                                        $imageFile     = $baseImagePath ? pathinfo($baseImagePath, PATHINFO_FILENAME) : null;
-                                        $imageBase     = ($imageDir && $imageDir !== '.') ? $imageDir . '/' . $imageFile : $imageFile;
-                                    @endphp
                                     <a href="{{ route('preview-article', $product->slug) }}" class="block h-full">
-                                        @if($imageBase)
-                                            <picture>
-                                                <source type="image/webp"
-                                                        srcset="{{ asset('storage/' . $imageBase . '-320.webp') }} 320w,
-                                                                {{ asset('storage/' . $imageBase . '-640.webp') }} 640w,
-                                                                {{ asset('storage/' . $imageBase . '-960.webp') }} 960w"
-                                                        sizes="(min-width: 1280px) 25vw,
-                                                               (min-width: 1024px) 33vw,
-                                                               (min-width: 640px) 50vw,
-                                                               100vw">
-                                                <img src="{{ asset('storage/' . $imageBase . '-640.jpg') }}"
-                                                     alt="{{ $product->name }} | Paradis Déco"
-                                                     srcset="{{ asset('storage/' . $imageBase . '-320.jpg') }} 320w,
-                                                             {{ asset('storage/' . $imageBase . '-640.jpg') }} 640w,
-                                                             {{ asset('storage/' . $imageBase . '-960.jpg') }} 960w"
-                                                     sizes="(min-width: 1280px) 25vw,
-                                                            (min-width: 1024px) 33vw,
-                                                            (min-width: 640px) 50vw,
-                                                            100vw"
-                                                     class="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
-                                                     loading="lazy" width="500" height="500" decoding="async" />
-                                            </picture>
-                                        @else
-                                            <img src="{{ asset('storage/' . ($product->image_avant ?? ($product->images[0] ?? ''))) }}"
-                                                 alt="{{ $product->name }} | Paradis Déco"
-                                                 class="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
-                                                 loading="lazy" width="500" height="500" decoding="async" />
-                                        @endif
+                                        <img src="{{ asset('storage/' . ($product->image_avant ?? ($product->images[0] ?? ''))) }}"
+                                             alt="{{ $product->name }} | Paradis Déco"
+                                             class="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
+                                             loading="lazy" width="500" height="500" decoding="async"
+                                             sizes="(min-width: 1280px) 25vw,
+                                                    (min-width: 1024px) 33vw,
+                                                    (min-width: 640px) 50vw,
+                                                    100vw" />
                                     </a>
 
                                     @if($product->created_at->diffInDays(now()) < 30)
