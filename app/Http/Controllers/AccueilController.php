@@ -63,16 +63,23 @@ class AccueilController extends Controller
      */
     private function bestSellers(int $limit = 8)
     {
-        return $this->productListQuery()
-            ->join('order_items', 'order_items.product_id', '=', 'products.id')
+        // Agrégat des ventes dans une sous-requête : compatible avec
+        // ONLY_FULL_GROUP_BY (MariaDB ne déduit pas la dépendance sur la clé).
+        $sales = DB::table('order_items')
             ->join('orders', 'orders.id', '=', 'order_items.order_id')
             ->join('statuts', 'statuts.id', '=', 'orders.statut_id')
             ->whereNull('orders.deleted_at')
             ->whereNull('order_items.deleted_at')
             ->where('statuts.name', 'not like', '%nnul%')
-            ->groupBy('products.id')
-            ->orderByDesc(DB::raw('SUM(order_items.quantity)'))
+            ->groupBy('order_items.product_id')
+            ->selectRaw('order_items.product_id, SUM(order_items.quantity) AS sold_qty');
+
+        return Product::active()
             ->select('products.*')
+            ->joinSub($sales, 'sales', 'sales.product_id', '=', 'products.id')
+            ->withCount(['avis as approved_reviews_count' => fn ($q) => $q->where('approved', true)])
+            ->withAvg(['avis as approved_reviews_avg' => fn ($q) => $q->where('approved', true)], 'rating')
+            ->orderByDesc('sales.sold_qty')
             ->take($limit)
             ->get();
     }
