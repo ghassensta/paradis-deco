@@ -1,16 +1,14 @@
 @extends('front-office.layouts.app')
+
+@section('description', 'Paradis Déco, boutique en ligne de décoration d\'intérieur à M\'saken, Sousse. Découvrez notre sélection de meubles, luminaires et articles déco pour embellir votre maison en Tunisie.')
 @section('title', 'Paradis Déco - À propos de Paradis Déco - Boutique Déco Tunisie | Décoration Intérieur Tunisie')
 
 @section('meta')
     <meta name="keywords" content="décoration intérieur Tunisie, meubles tunisiens, tapis, boutique déco en ligne, artisanat tunisien, décoration moderne Tunis, accessoires déco pas chers Tunisie, boutique en ligne Tunisie, vente décoration en ligne, luminaires Tunisie, accessoires maison Tunisie">
     <meta name="author" content="Paradis Déco">
-    <meta name="description" content="Paradis Déco, boutique en ligne de décoration d'intérieur à M'saken, Sousse. Découvrez notre sélection de meubles, luminaires et articles déco pour embellir votre maison en Tunisie.">
     <link rel="canonical" href="{{ url()->current() }}">
     <link rel="alternate" href="{{ url()->current() }}" hreflang="fr-tn">
     <link rel="alternate" href="{{ url()->current() }}" hreflang="x-default">
-    <meta property="og:locale" content="fr_TN">
-    <meta property="og:type" content="product">
-    <meta property="og:site_name" content="{{ config('app.name') }}">
     <meta name="robots" content="index, follow" />
 @endsection
 

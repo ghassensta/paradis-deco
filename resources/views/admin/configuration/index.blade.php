@@ -13,6 +13,43 @@
                             @csrf
                             @method('PUT')
 
+                            @if (session('message'))
+                                <div class="alert alert-success alert-dismissible" role="alert">
+                                    {{ session('message') }}
+                                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Fermer"></button>
+                                </div>
+                            @endif
+
+                            @if ($errors->any())
+                                <div class="alert alert-danger" role="alert">
+                                    <strong>Vérifiez les champs suivants :</strong>
+                                    <ul class="mb-0 mt-1">
+                                        @foreach ($errors->all() as $error)
+                                            <li>{{ $error }}</li>
+                                        @endforeach
+                                    </ul>
+                                </div>
+                            @endif
+
+                            <ul class="nav nav-pills flex-column flex-md-row mb-4" role="tablist">
+                                @foreach ([
+                                    'general' => 'Général',
+                                    'contact' => 'Contact',
+                                    'social' => 'Réseaux sociaux',
+                                    'tracking' => 'Tracking',
+                                ] as $tab => $label)
+                                    <li class="nav-item">
+                                        <button type="button" class="nav-link {{ $loop->first ? 'active' : '' }}"
+                                                data-bs-toggle="tab" data-bs-target="#tab-{{ $tab }}"
+                                                role="tab" aria-controls="tab-{{ $tab }}"
+                                                aria-selected="{{ $loop->first ? 'true' : 'false' }}">{{ $label }}</button>
+                                    </li>
+                                @endforeach
+                            </ul>
+
+                            <div class="tab-content p-0">
+                            <div class="tab-pane fade show active" id="tab-general" role="tabpanel">
+
                             <!-- Site Name -->
                             <div class="mb-3">
                                 <label for="site_name" class="form-label fw-semibold">Nom du site</label>
@@ -143,6 +180,89 @@
                             </div>
 
                             <!-- Submit Button -->
+                            </div>
+
+                            <div class="tab-pane fade" id="tab-contact" role="tabpanel">
+                                <div class="row g-3">
+                                    @foreach ([
+                                        ['support_phone', 'Téléphone', 'tel', 'Ex. : +216 20 123 456'],
+                                        ['address', 'Adresse', 'text', 'Rue, numéro'],
+                                        ['city', 'Ville / Gouvernorat', 'text', 'Ex. : Sousse'],
+                                        ['working_hours', 'Horaires', 'text', 'Ex. : Lun-Sam 9h-18h'],
+                                    ] as [$field, $label, $type, $placeholder])
+                                        <div class="col-12 col-md-6">
+                                            <label class="form-label" for="{{ $field }}">{{ $label }}</label>
+                                            <input type="{{ $type }}" class="form-control" id="{{ $field }}" name="{{ $field }}"
+                                                   value="{{ old($field, $settings->$field ?? null) }}" placeholder="{{ $placeholder }}">
+                                            <small class="text-muted">Affiché dans le pied de page et la page contact.</small>
+                                        </div>
+                                    @endforeach
+                                </div>
+                            </div>
+
+                            <div class="tab-pane fade" id="tab-social" role="tabpanel">
+                                <div class="row g-3">
+                                    @foreach ([
+                                        ['facebook_url', 'Facebook', 'url', 'https://facebook.com/...'],
+                                        ['instagram_url', 'Instagram', 'url', 'https://instagram.com/...'],
+                                        ['tiktok_url', 'TikTok', 'url', 'https://tiktok.com/@...'],
+                                        ['whatsapp_number', 'WhatsApp', 'tel', '+216 20 123 456'],
+                                    ] as [$field, $label, $type, $placeholder])
+                                        <div class="col-12 col-md-6">
+                                            <label class="form-label" for="{{ $field }}">{{ $label }}</label>
+                                            <input type="{{ $type }}" class="form-control" id="{{ $field }}" name="{{ $field }}"
+                                                   value="{{ old($field, $settings->$field ?? null) }}" placeholder="{{ $placeholder }}">
+                                        </div>
+                                    @endforeach
+
+                                    <div class="col-12 col-md-6">
+                                        <label class="form-label" for="og_image">Image de partage (Open Graph)</label>
+                                        <input type="file" class="form-control" id="og_image" name="og_image" accept="image/*">
+                                        <small class="text-muted">Utilisée lors du partage sur les réseaux. 1200 × 630 recommandé.</small>
+                                        @if ($settings->og_image ?? null)
+                                            <img src="{{ asset('storage/' . $settings->og_image) }}" alt="Image Open Graph actuelle"
+                                                 class="mt-2 rounded" style="max-height: 90px">
+                                        @endif
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="tab-pane fade" id="tab-tracking" role="tabpanel">
+                                <div class="alert alert-info" role="alert">
+                                    Un traceur n'est chargé que si son identifiant est renseigné <strong>et</strong> la case cochée.
+                                    Aucun script n'est injecté dans l'administration.
+                                </div>
+
+                                <div class="row g-4">
+                                    @foreach ([
+                                        ['meta', 'Meta Pixel (Facebook / Instagram)', 'meta_pixel_id', 'meta_pixel_enabled', 'Ex. : 123456789012345'],
+                                        ['tiktok', 'TikTok Pixel', 'tiktok_pixel_id', 'tiktok_pixel_enabled', 'Ex. : C4A1B2C3D4E5'],
+                                        ['ga4', 'Google Analytics 4', 'ga4_measurement_id', 'ga4_enabled', 'Ex. : G-XXXXXXXXXX'],
+                                    ] as [$key, $label, $idField, $flagField, $placeholder])
+                                        <div class="col-12 col-lg-4">
+                                            <div class="card h-100">
+                                                <div class="card-body">
+                                                    <h6 class="mb-3">{{ $label }}</h6>
+
+                                                    <label class="form-label" for="{{ $idField }}">Identifiant</label>
+                                                    <input type="text" class="form-control" id="{{ $idField }}" name="{{ $idField }}"
+                                                           value="{{ old($idField, $settings->$idField ?? null) }}" placeholder="{{ $placeholder }}">
+
+                                                    <div class="form-check mt-3">
+                                                        <input type="hidden" name="{{ $flagField }}" value="0">
+                                                        <input class="form-check-input" type="checkbox" value="1"
+                                                               id="{{ $flagField }}" name="{{ $flagField }}"
+                                                               {{ old($flagField, $settings->$flagField ?? false) ? 'checked' : '' }}>
+                                                        <label class="form-check-label" for="{{ $flagField }}">Activer</label>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    @endforeach
+                                </div>
+                            </div>
+                            </div>
+
                             <div class="mt-4">
                                 <button type="submit" class="btn btn-primary">Enregistrer les modifications</button>
                                 <a href="" class="btn btn-secondary">Annuler</a>

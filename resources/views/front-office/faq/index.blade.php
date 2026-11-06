@@ -1,9 +1,9 @@
 @extends('front-office.layouts.app')
+
+@section('description', 'FAQ complète de Paradis Déco : 50+ questions/réponses sur commandes, livraisons, paiements, retours, garanties et services. Boutique déco à M\'saken, Sousse.')
 @section('title', 'FAQ Paradis Déco - Questions/Réponses Détaillées | Boutique Déco Sousse')
 
 @section('meta')
-    <meta name="description"
-        content="FAQ complète de Paradis Déco : 50+ questions/réponses sur commandes, livraisons, paiements, retours, garanties et services. Boutique déco à M'saken, Sousse.">
     <meta name="keywords"
         content="FAQ déco Tunisie, questions boutique en ligne, livraison décoration Sousse, retour produits déco, paiement sécurisé Tunisie">
     <!-- Schema.org FAQ markup -->

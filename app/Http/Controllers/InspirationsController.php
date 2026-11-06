@@ -3,6 +3,8 @@
 namespace App\Http\Controllers;
 
 use App\Models\Inspiration;
+use App\Support\ImageStorage;
+use App\Support\RichText;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
 use Illuminate\Support\Facades\Storage;
@@ -34,15 +36,20 @@ class InspirationsController extends Controller
     {
         $request->validate([
             'title' => 'required|string|max:255',
-            'resume' => 'nullable|string',
-            'description' => 'nullable|string',
+            'resume' => 'nullable|string|max:2000',
+            'description' => 'nullable|string|max:60000',
             'meta_title' => 'nullable|string',
             'meta_description' => 'nullable|string',
-            'image' => 'nullable|image|',
+            'image' => ImageStorage::rule(),
             'is_active' => 'boolean',
         ]);
 
         $data = $request->only(['title', 'slug', 'resume', 'description', 'meta_title', 'meta_description', 'is_active']);
+
+        // Le contenu de l'éditeur est nettoyé côté serveur : une requête HTTP
+        // directe ne doit pas pouvoir injecter de script dans les pages.
+        $data['description'] = RichText::toHtml($data['description'] ?? null) ?: null;
+        $data['resume'] = RichText::toText($data['resume'] ?? null) ?: null;
 
         // Générer le slug si non fourni
         $data['slug'] = $data['slug'] ?? Str::slug($data['title']);
@@ -54,17 +61,9 @@ class InspirationsController extends Controller
             $data['slug'] = $baseSlug . '-' . $counter++;
         }
 
-        // Gestion de l'image
-        if ($request->hasFile('image') && $request->file('image')->isValid()) {
-            $filename = Str::slug($data['title']) . '-' . time() . '.webp';
-            $path = 'inspirations/' . $filename;
-
-            // Convertir en WebP avec Intervention Image
-            $image = Image::read($request->file('image'))->toWebp(80);
-            Storage::disk('public')->put($path, (string) $image);
-
-            // Stocke le chemin relatif
-            $data['image'] = $path;
+        // Redimensionnement + conversion WebP + nom serveur : voir ImageStorage.
+        if ($request->hasFile('image')) {
+            $data['image'] = ImageStorage::store($request->file('image'), 'inspirations', $data['title']);
         }
 
         Inspiration::create($data);
@@ -88,16 +87,21 @@ class InspirationsController extends Controller
     {
         $request->validate([
             'title' => 'required|string|max:255',
-            'resume' => 'nullable|string',
-            'description' => 'nullable|string',
+            'resume' => 'nullable|string|max:2000',
+            'description' => 'nullable|string|max:60000',
             'meta_title' => 'nullable|string',
             'meta_description' => 'nullable|string|',
-            'image' => 'nullable|image',
+            'image' => ImageStorage::rule(),
             'is_active' => 'boolean',
         ]);
 
         $inspiration = Inspiration::where('id', $id)->firstOrFail();
         $data = $request->only(['title', 'slug', 'resume', 'description', 'meta_title', 'meta_description', 'is_active']);
+
+        // Le contenu de l'éditeur est nettoyé côté serveur : une requête HTTP
+        // directe ne doit pas pouvoir injecter de script dans les pages.
+        $data['description'] = RichText::toHtml($data['description'] ?? null) ?: null;
+        $data['resume'] = RichText::toText($data['resume'] ?? null) ?: null;
 
         // Générer le slug si non fourni
         $data['slug'] = $data['slug'] ?? Str::slug($data['title']);
@@ -109,22 +113,14 @@ class InspirationsController extends Controller
             $data['slug'] = $baseSlug . '-' . $counter++;
         }
 
-        // Gestion de l'image
-        if ($request->hasFile('image') && $request->file('image')->isValid()) {
-            // Supprimer l'ancienne image si elle existe
-            if ($inspiration->image) {
-                Storage::disk('public')->delete($inspiration->image);
-            }
-
-            $filename = Str::slug($data['title']) . '-' . time() . '.webp';
-            $path = 'inspirations/' . $filename;
-
-            // Convertir en WebP avec Intervention Image
-            $image = Image::read($request->file('image'))->toWebp(80);
-            Storage::disk('public')->put($path, (string) $image);
-
-            // Stocke le chemin relatif
-            $data['image'] = $path;
+        // L'ancienne image n'est supprimée qu'une fois la nouvelle écrite.
+        if ($request->hasFile('image')) {
+            $data['image'] = ImageStorage::replace(
+                $request->file('image'),
+                'inspirations',
+                $inspiration->image,
+                $data['title']
+            );
         }
 
         $inspiration->update($data);
@@ -139,7 +135,7 @@ class InspirationsController extends Controller
     {
         $inspiration = Inspiration::where('id', $id)->firstOrFail();
         if ($inspiration->image) {
-            Storage::disk('public')->delete($inspiration->image);
+            ImageStorage::delete($inspiration->image);
         }
         $inspiration->delete();
 

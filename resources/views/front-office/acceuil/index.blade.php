@@ -1,4 +1,6 @@
 @extends('front-office.layouts.app')
+
+@section('description', 'Paradis Déco, boutique déco n°1 en Tunisie : meubles, luminaires, tapis et accessoires artisanaux pour un intérieur moderne et chaleureux. Livraison rapide partout en Tunisie.')
 {{-- =========================
      MÉTADONNÉES SEO OPTIMISÉES
 ========================== --}}
@@ -23,9 +25,6 @@
         $ogImage = asset('images/og/paradis-deco.jpg');
     @endphp
 
-    <meta name="description"
-        content="Paradis Déco, boutique déco n°1 en Tunisie : meubles, luminaires, tapis et accessoires artisanaux pour un intérieur moderne et chaleureux. Livraison rapide partout en Tunisie.">
-
     <meta name="keywords" content="{{ implode(', ', $keywords) }}">
     <meta name="author" content="Paradis Déco">
     <meta name="publisher" content="Paradis Déco">
@@ -38,153 +37,131 @@
     <meta name="robots" content="index, follow, max-snippet:-1, max-image-preview:large, max-video-preview:-1">
 
     <!-- Open Graph / Facebook -->
-    <meta property="og:type" content="website">
-    <meta property="og:locale" content="fr_TN">
-    <meta property="og:site_name" content="Paradis Déco">
-    <meta property="og:url" content="{{ url()->current() }}">
-    <meta property="og:title" content="Paradis Déco – Boutique déco en ligne Tunisie | Sublimez votre intérieur">
-    <meta property="og:description"
-        content="Meubles, luminaires & accessoires maison fabriqués ou sélectionnés en Tunisie.">
-    <meta property="og:image" content="{{ $ogImage }}">
     <meta property="og:image:alt" content="Salon décoré avec meubles et luminaires de Paradis Déco">
 
     <!-- Twitter Card -->
-    <meta name="twitter:card" content="summary_large_image">
-    <meta name="twitter:title" content="Paradis Déco – Sublimez votre intérieur">
-    <meta name="twitter:description" content="Boutique déco en ligne n°1 en Tunisie. Livraison rapide.">
-    <meta name="twitter:image" content="{{ $ogImage }}">
-
     <!-- JSON-LD Schema.org (tout le balisage structuré ici) -->
+    @php
+        // Graphe construit en PHP : json_encode garantit un JSON valide quels que
+        // soient les apostrophes, guillemets ou accents présents dans les données.
+        $home = url('/');
+        $siteName = $config->site_name ?: config('app.name');
+
+        $graph = [
+            [
+                '@type' => 'Organization',
+                '@id' => $home . '/#organization',
+                'name' => $siteName,
+                'url' => $home,
+                'logo' => $ogImage,
+                'sameAs' => [
+                    'https://www.facebook.com/paradisdeco.tn',
+                    'https://www.instagram.com/paradisdeco.tn',
+                ],
+            ],
+            [
+                '@type' => 'WebSite',
+                '@id' => $home . '/#website',
+                'url' => $home,
+                'name' => $siteName,
+                'publisher' => ['@id' => $home . '/#organization'],
+            ],
+            [
+                '@type' => 'WebPage',
+                '@id' => url()->current() . '/#webpage',
+                'url' => url()->current(),
+                'name' => $siteName . ' – Boutique déco en ligne Tunisie',
+                'isPartOf' => ['@id' => $home . '/#website'],
+                'breadcrumb' => ['@id' => url()->current() . '/#breadcrumb'],
+            ],
+            [
+                '@type' => 'BreadcrumbList',
+                '@id' => url()->current() . '/#breadcrumb',
+                'itemListElement' => [[
+                    '@type' => 'ListItem',
+                    'position' => 1,
+                    'name' => 'Accueil',
+                    'item' => $home,
+                ]],
+            ],
+        ];
+
+        $items = [];
+
+        foreach ($latestProducts->where('is_active', true)->values() as $index => $item) {
+            $product = [
+                '@type' => 'Product',
+                '@id' => route('preview-article', $item->slug) . '#product',
+                'name' => $item->name,
+                'description' => Str::limit(strip_tags($item->description), 180),
+                // Référence réelle du catalogue, jamais une valeur fabriquée.
+                'sku' => $item->sku ?: (string) $item->id,
+                'brand' => ['@type' => 'Brand', 'name' => $siteName],
+                'offers' => [
+                    '@type' => 'Offer',
+                    'url' => route('preview-article', $item->slug),
+                    'priceCurrency' => 'TND',
+                    'price' => number_format((float) $item->price, 2, '.', ''),
+                    'availability' => $item->stock > 0
+                        ? 'https://schema.org/InStock'
+                        : 'https://schema.org/OutOfStock',
+                    'seller' => ['@type' => 'Organization', 'name' => $siteName],
+                ],
+            ];
+
+            if ($cover = \App\Models\Product::mediaUrl($item->image_avant)) {
+                $product['image'] = $cover;
+            }
+
+            // Note agrégée déclarée uniquement si des avis approuvés existent.
+            if (($item->approved_reviews_count ?? 0) > 0 && $item->approved_reviews_avg !== null) {
+                $product['aggregateRating'] = [
+                    '@type' => 'AggregateRating',
+                    'ratingValue' => number_format((float) $item->approved_reviews_avg, 1, '.', ''),
+                    'reviewCount' => (int) $item->approved_reviews_count,
+                    'bestRating' => '5',
+                    'worstRating' => '1',
+                ];
+            }
+
+            $items[] = [
+                '@type' => 'ListItem',
+                'position' => $index + 1,
+                'item' => $product,
+            ];
+        }
+
+        if ($items) {
+            $graph[] = [
+                '@type' => 'ItemList',
+                'name' => 'Nouveautés – Produits en vedette',
+                'itemListElement' => $items,
+            ];
+        }
+
+        if ($testimonials->isNotEmpty()) {
+            $graph[] = [
+                '@type' => 'Organization',
+                '@id' => $home . '/#organization',
+                'review' => $testimonials->map(fn ($t) => [
+                    '@type' => 'Review',
+                    'reviewRating' => [
+                        '@type' => 'Rating',
+                        'ratingValue' => (string) $t->rating,
+                        'bestRating' => '5',
+                    ],
+                    'author' => ['@type' => 'Person', 'name' => $t->name],
+                    'reviewBody' => Str::limit($t->comment, 300),
+                    'datePublished' => $t->created_at->format('Y-m-d'),
+                ])->all(),
+            ];
+        }
+    @endphp
     <script type="application/ld+json">
-    {
-        "@context": "https://schema.org",
-        "@graph": [
-            {
-                "@type": "Organization",
-                "@id": "{{ url('/') }}/#organization",
-                "name": "{{ $config->site_name ?? 'Paradis Déco' }}",
-                "url": "{{ url('/') }}",
-                "logo": "{{ $ogImage }}",
-                "sameAs": [
-                    "https://www.facebook.com/paradisdeco.tn",
-                    "https://www.instagram.com/paradisdeco.tn"
-                ]
-            },
-            {
-                "@type": "WebSite",
-                "@id": "{{ url('/') }}/#website",
-                "url": "{{ url('/') }}",
-                "name": "{{ $config->site_name ?? 'Paradis Déco' }}",
-                "publisher": {
-                    "@id": "{{ url('/') }}/#organization"
-                }
-            },
-            {
-                "@type": "WebPage",
-                "@id": "{{ url()->current() }}/#webpage",
-                "url": "{{ url()->current() }}",
-                "name": "Paradis Déco – Boutique déco en ligne Tunisie",
-                "isPartOf": {
-                    "@id": "{{ url('/') }}/#website"
-                },
-                "breadcrumb": {
-                    "@id": "{{ url()->current() }}/#breadcrumb"
-                }
-            },
-            {
-                "@type": "BreadcrumbList",
-                "@id": "{{ url()->current() }}/#breadcrumb",
-                "itemListElement": [
-                    {
-                        "@type": "ListItem",
-                        "position": 1,
-                        "name": "Accueil",
-                        "item": "{{ url('/') }}"
-                    }
-                ]
-            },
-            {
-                "@type": "ItemList",
-                "name": "Nouveautés – Produits en vedette",
-                "itemListElement": [
-                    @forelse ($latestProducts as $index => $item)
-                        @if ($item->is_active)
-                            @php
-                                $image = asset('storage/' . $item->image_avant);
-                                $desc = Str::limit(strip_tags($item->description), 180);
-                                $availability = $item->stock > 0 ? 'https://schema.org/InStock' : 'https://schema.org/OutOfStock';
-                            @endphp
-                            {
-                                "@type": "ListItem",
-                                "position": {{ $index + 1 }},
-                                "item": {
-                                    "@type": "Product",
-                                    "@id": "{{ route('preview-article', $item->slug) }}/#product",
-                                    "name": {{ json_encode($item->name) }},
-                                    "image": "{{ $image }}",
-                                    "description": {{ json_encode($desc) }},
-                                    "sku": "PROD-{{ $item->id }}",
-                                    "brand": {
-                                        "@type": "Brand",
-                                        "name": "{{ $config->site_name ?? 'Paradis Déco' }}"
-                                    },
-                                    "offers": {
-                                        "@type": "Offer",
-                                        "url": "{{ route('preview-article', $item->slug) }}",
-                                        "priceCurrency": "TND",
-                                        "price": "{{ number_format($item->price, 2, '.', '') }}",
-                                        "availability": "{{ $availability }}",
-                                        "priceValidUntil": "{{ now()->addYear()->format('Y-m-d') }}",
-                                        "seller": {
-                                            "@type": "Organization",
-                                            "name": "{{ $config->site_name ?? 'Paradis Déco' }}"
-                                        }
-                                    }
-                                    @if (isset($item->average_rating) && $item->review_count > 0)
-                                    ,"aggregateRating": {
-                                        "@type": "AggregateRating",
-                                        "ratingValue": "{{ number_format($item->average_rating, 1, '.', '') }}",
-                                        "reviewCount": "{{ $item->review_count }}",
-                                        "bestRating": "5",
-                                        "worstRating": "1"
-                                    }
-                                    @endif
-                                }
-                            }{{ !$loop->last ? ',' : '' }}
-                        @endif
-                    @empty
-                        /* Aucun produit */
-                    @endforelse
-                ]
-            }
-            @if ($testimonials->isNotEmpty())
-            ,{
-                "@type": "Organization",
-                "@id": "{{ url('/') }}/#organization",
-                "review": [
-                    @foreach ($testimonials as $testimonial)
-                    {
-                        "@type": "Review",
-                        "reviewRating": {
-                            "@type": "Rating",
-                            "ratingValue": "{{ $testimonial->rating }}",
-                            "bestRating": "5"
-                        },
-                        "author": {
-                            "@type": "Person",
-                            "name": {{ json_encode($testimonial->name) }}
-                        },
-                        "reviewBody": {{ json_encode(Str::limit($testimonial->comment, 300)) }},
-                        "datePublished": "{{ $testimonial->created_at->format('Y-m-d') }}"
-                    }{{ !$loop->last ? ',' : '' }}
-                    @endforeach
-                ]
-            }
-            @endif
-        ]
-    }
+    {!! json_encode(['@context' => 'https://schema.org', '@graph' => $graph], JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE) !!}
     </script>
 @endsection
+@section('og_image', $ogImage)
 
 @section('content')
     <!-- HERO avec une seule image -->
@@ -235,179 +212,206 @@
         </div>
     </section>
 
-    <!-- CATÉGORIES -->
-    <section class="py-16 bg-white" id="categories">
-        <div class="container mx-auto px-6">
-            <h2 class="text-3xl font-bold text-center mb-12">Nos Catégories</h2>
-            <div class="grid grid-cols-2 md:grid-cols-4 gap-6">
-                @forelse ($latestCategories as $item)
-                    <a href="{{ route('categorie.produits', $item->slug) }}"
-                        class="group relative overflow-hidden rounded-xl shadow-md h-48">
-                        <img src="{{ $item->image_url ?? 'https://via.placeholder.com/500x300?text=Category' }}"
-                            alt="{{ $item->name }} | {{ $config->site_name }}"
-                            class="w-full h-full object-cover group-hover:scale-105 transition duration-500" loading="lazy">
-                        <div class="absolute inset-0 bg-black/30 flex items-center justify-center">
-                            <h3 class="text-white text-xl font-bold group-hover:scale-110 transition">
-                                {{ $item->name }}
-                            </h3>
-                        </div>
-                    </a>
-                @empty
-                    <div class="col-span-4 text-center text-gray-500">
-                        Aucune catégorie trouvée.
+    {{-- ================= UNIVERS / CATÉGORIES =================
+         Carousel compact : seules les catégories racines sont exposées ici,
+         les sous-catégories restent accessibles depuis la page catégorie. --}}
+    @include('front-office.partials.category-carousel', [
+        'categories' => $rootCategories,
+        'eyebrow' => 'Nos collections',
+        'title' => 'Explorez nos univers',
+        'subtitle' => 'Une sélection pensée pour chaque pièce de votre intérieur.',
+        'uid' => 'univers',
+    ])
+
+    {{-- ================= DERNIÈRES NOUVEAUTÉS ================= --}}
+    <div class="bg-[#faf8f4]">
+        @include('front-office.partials.product-carousel', [
+            'products' => $latestProducts,
+            'title' => 'Nos dernières nouveautés',
+            'subtitle' => 'Les dernières pièces ajoutées à la boutique.',
+            'ctaUrl' => route('allproduits'),
+            'ctaLabel' => 'Voir tous les produits',
+            'uid' => 'nouveautes',
+        ])
+    </div>
+
+    {{-- ============ MEILLEURES VENTES (données réelles) ============
+         Masqué tant qu'aucune vente n'a été enregistrée : aucun
+         classement n'est inventé. --}}
+    @include('front-office.partials.product-carousel', [
+        'products' => $bestSellers,
+        'title' => 'Nos incontournables',
+        'subtitle' => 'Les pièces les plus commandées par nos clients.',
+        'ctaUrl' => route('allproduits'),
+        'ctaLabel' => 'Découvrir la boutique',
+        'uid' => 'incontournables',
+    ])
+
+    {{-- ================= SECTION ÉDITORIALE ================= --}}
+    @if ($rootCategories->isNotEmpty())
+        @php $editorialCategory = $rootCategories->first(); @endphp
+        <section class="py-14 md:py-20" aria-labelledby="editorial-title">
+            <div class="container mx-auto px-5 sm:px-6">
+                <div class="grid items-center gap-8 md:grid-cols-2 md:gap-14">
+                    <div class="relative aspect-[4/3] overflow-hidden rounded-2xl bg-[#faf8f4] md:aspect-[5/4]">
+                        <img src="{{ $editorialCategory->visual_url }}"
+                             alt="Intérieur décoré par {{ $config->site_name }}"
+                             width="800" height="640" loading="lazy" decoding="async"
+                             class="h-full w-full object-cover"
+                             sizes="(min-width: 768px) 50vw, 100vw">
                     </div>
-                @endforelse
-            </div>
-        </div>
-    </section>
 
-    <!-- NOUVEAUTÉS -->
-    <section id="nouveautes" class="py-16 bg-gray-50">
-        <div class="container mx-auto px-6">
-            <!-- Titre -->
-            <div class="text-center mb-12">
-                <span class="inline-block bg-primary-light px-4 py-2 rounded-full text-primary font-semibold mb-3">
-                    Nouveautés
-                </span>
-                <h2 class="text-3xl font-bold">Découvrez Nos Dernières Créations</h2>
-                <div class="w-24 h-1 bg-primary mx-auto mt-4"></div>
-            </div>
+                    <div>
+                        <p class="mb-2 text-[11px] uppercase tracking-[0.2em] text-[#dfb54e]">Notre approche</p>
+                        <h2 id="editorial-title" class="text-2xl font-semibold tracking-tight text-gray-900 md:text-3xl">
+                            L'élégance dans chaque détail
+                        </h2>
+                        <p class="mt-4 text-sm leading-relaxed text-gray-600 md:text-base">
+                            Chaque pièce est choisie pour sa matière, sa finition et la façon dont elle
+                            s'intègre à un intérieur. Des accessoires du quotidien aux pièces plus
+                            affirmées, notre sélection privilégie la sobriété et la durabilité.
+                        </p>
 
-            <!-- CAROUSEL -->
-            <div class="relative">
-                <!-- flèches -->
-                <button class="swiper-button-prev !text-[#dfb54e] hover:scale-110 transition"
-                    aria-label="Précédent"></button>
-                <button class="swiper-button-next text !text-[#dfb54e] transition" aria-label="Suivant"></button>
-
-                <!-- wrapper Swiper -->
-                <div class="swiper mySwiper">
-                    <div class="swiper-wrapper">
-                        @forelse ($latestProducts as $item)
-                            @if ($item->is_active)
-                                <div class="swiper-slide">
-                                    <!-- CARTE PRODUIT (sans microdata) -->
-                                    <article class="bg-white rounded-2xl shadow-lg overflow-hidden group hover:shadow-xl transition-all duration-300 hover:-translate-y-1 h-[460px] flex flex-col justify-between">
-                                        <!-- Image -->
-                                        <div class="relative h-64 overflow-hidden flex items-center justify-center bg-gray-100">
-                                            <a href="{{ route('preview-article', $item->slug) }}" title="{{ $item->meta_title ?? $item->name }}" class="block w-full h-full">
-                                                <img src="{{ asset('storage/' . $item->image_avant) }}"
-                                                    alt="{{ $item->name }}"
-                                                    class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-                                                    loading="lazy" width="500" height="320" decoding="async"
-                                                    sizes="(min-width: 1024px) 25vw,
-                                                           (min-width: 768px) 33vw,
-                                                           (min-width: 640px) 50vw,
-                                                           80vw">
-                                            </a>
-
-                                            <!-- Badges -->
-                                            <div class="absolute top-4 right-4">
-                                                <span class="bg-[#228B22] text-white text-xs font-semibold px-3 py-1 rounded-full uppercase">Nouveau</span>
-                                            </div>
-
-                                            @if ($item->stock <= 5 && $item->stock > 0)
-                                                <div class="absolute top-4 left-4">
-                                                    <span class="bg-red-500 text-white text-xs font-semibold px-3 py-1 rounded-full uppercase">Stock faible</span>
-                                                </div>
-                                            @elseif ($item->stock == 0)
-                                                <div class="absolute top-4 left-4">
-                                                    <span class="bg-gray-600 text-white text-xs font-semibold px-3 py-1 rounded-full uppercase">Épuisé</span>
-                                                </div>
-                                            @endif
-                                        </div>
-
-                                        <!-- Contenu -->
-                                        <div class="p-5 flex-1 flex flex-col justify-between">
-                                            <div class="mb-4">
-                                                <h3 class="text-lg font-semibold text-gray-800 hover:text-yellow-600 transition-colors line-clamp-1">
-                                                    <a href="{{ route('preview-article', $item->slug) }}">
-                                                        {{ Str::limit($item->name, 50) }}
-                                                    </a>
-                                                </h3>
-                                                <p class="text-gray-500 text-sm mt-1 line-clamp-2">
-                                                    {{ Str::limit(strip_tags($item->description), 80) }}
-                                                </p>
-                                            </div>
-
-                                            <!-- Prix & action -->
-                                            <div class="flex justify-between items-center mt-auto">
-                                                <p class="text-black font-bold text-xl">
-                                                    {{ number_format($item->price, 2) }} DT
-                                                </p>
-
-                                                <button aria-label="Ajouter {{ $item->name }} au panier"
-                                                    data-id="{{ $item->id }}"
-                                                    data-name="{{ $item->name }}"
-                                                    data-price="{{ $item->price ?? 0 }}"
-                                                    data-image="{{ asset('storage/' . $item->image_avant) }}"
-                                                    data-stock="{{ $item->stock }}"
-                                                    class="flex items-center gap-2 bg-black hover:bg-gray-800 text-white px-4 py-2 rounded-lg transition transform hover:scale-105"
-                                                    @if ($item->stock == 0) disabled @endif
-                                                    onclick="addToCart(this)">
-                                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
-                                                    </svg>
-                                                    Ajouter
-                                                </button>
-                                            </div>
-                                        </div>
-                                    </article>
-                                </div>
+                        {{-- Arguments tirés de la configuration réelle du site. --}}
+                        <ul class="mt-6 space-y-2.5 text-sm text-gray-700">
+                            <li class="flex items-start gap-2">
+                                <span aria-hidden="true" class="mt-0.5 text-[#dfb54e]">&#10003;</span>
+                                <span>{{ $rootCategories->count() }} univers à explorer</span>
+                            </li>
+                            @if ($config->city)
+                                <li class="flex items-start gap-2">
+                                    <span aria-hidden="true" class="mt-0.5 text-[#dfb54e]">&#10003;</span>
+                                    <span>Expédition depuis {{ $config->city }}</span>
+                                </li>
                             @endif
-                        @empty
-                            <div class="swiper-slide">
-                                <div class="text-center py-8">
-                                    <p class="text-gray-500 text-lg">Aucun produit disponible pour le moment.</p>
-                                    <a href="{{ route('produits.index') }}"
-                                        class="text-indigo-600 hover:underline font-semibold">
-                                        Voir tous les produits
-                                    </a>
-                                </div>
-                            </div>
-                        @endforelse
+                            @if (($config->delivery_estimate_days ?? 0) > 0)
+                                <li class="flex items-start gap-2">
+                                    <span aria-hidden="true" class="mt-0.5 text-[#dfb54e]">&#10003;</span>
+                                    <span>Livraison estimée sous {{ $config->delivery_estimate_days }} jour(s)</span>
+                                </li>
+                            @endif
+                            @if (($config->free_shipping_threshold ?? 0) > 0)
+                                <li class="flex items-start gap-2">
+                                    <span aria-hidden="true" class="mt-0.5 text-[#dfb54e]">&#10003;</span>
+                                    <span>Livraison offerte dès {{ number_format($config->free_shipping_threshold, 0, ',', ' ') }} DT d'achat</span>
+                                </li>
+                            @endif
+                        </ul>
+
+                        <a href="{{ route('allproduits') }}"
+                           class="mt-7 inline-block rounded-lg bg-gray-900 px-6 py-3 text-sm font-medium text-white transition-colors hover:bg-[#dfb54e] focus:outline-none focus:ring-2 focus:ring-[#dfb54e] focus:ring-offset-2">
+                            Découvrir la boutique
+                        </a>
                     </div>
                 </div>
             </div>
+        </section>
+    @endif
 
-            <!-- CTA voir tout -->
-            <div class="text-center mt-12">
-                <a href="{{ route('allproduits') }}"
-                    class="inline-block px-8 py-3 border-2 border-primary text-primary rounded-full font-bold  transition">
-                    Voir toutes les nouveautés
-                </a>
-            </div>
-        </div>
-    </section>
-
-    <!-- SERVICES EXCLUSIFS -->
-    <section class="py-16 bg-white">
-        <div class="container mx-auto px-6">
-            <h2 class="text-3xl font-bold text-center mb-12">Nos Services Exclusifs</h2>
-            <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
-                <div class="bg-gray-50 p-8 rounded-xl text-center hover:shadow-lg transition">
-                    <div class="bg-primary-light w-16 h-16 mx-auto rounded-full flex items-center justify-center mb-4">
-                        <i class="fas fa-palette text-primary text-2xl"></i>
-                    </div>
-                    <h3 class="text-xl font-bold mb-3">Conseil en Décoration</h3>
-                    <p class="text-gray-600">Nos experts vous accompagnent pour créer un intérieur qui vous ressemble.
+    {{-- ============ UN INTÉRIEUR À VOTRE IMAGE ============ --}}
+    @php $featuredUniverses = $rootCategories->slice(0, 4)->values(); @endphp
+    @if ($featuredUniverses->count() >= 2)
+        <section class="bg-[#faf8f4] py-10 md:py-14" aria-labelledby="interieur-title">
+            <div class="container mx-auto px-5 sm:px-6">
+                <div class="mb-6 md:mb-8">
+                    <h2 id="interieur-title" class="text-2xl font-semibold tracking-tight text-gray-900 md:text-3xl">
+                        Un intérieur à votre image
+                    </h2>
+                    <p class="mt-2 max-w-xl text-sm text-gray-500 md:text-base">
+                        Parcourez nos collections et composez l'ambiance qui vous ressemble.
                     </p>
                 </div>
-                <div class="bg-gray-50 p-8 rounded-xl text-center hover:shadow-lg transition">
-                    <div class="bg-primary-light w-16 h-16 mx-auto rounded-full flex items-center justify-center mb-4">
-                        <i class="fas fa-truck text-primary text-2xl"></i>
-                    </div>
-                    <h3 class="text-xl font-bold mb-3">Livraison & Installation</h3>
-                    <p class="text-gray-600">Nous livrons et installons vos meubles pour un service clé en main.</p>
-                </div>
-                <div class="bg-gray-50 p-8 rounded-xl text-center hover:shadow-lg transition">
-                    <div class="bg-primary-light w-16 h-16 mx-auto rounded-full flex items-center justify-center mb-4">
-                        <i class="fas fa-undo-alt text-primary text-2xl"></i>
-                    </div>
-                    <h3 class="text-xl font-bold mb-3">Retour Facile</h3>
-                    <p class="text-gray-600">30 jours pour changer d'avis, retour gratuit en magasin.</p>
+
+                {{-- Cartes horizontales : la vignette reste petite et le texte
+                     passe sur fond blanc, donc toujours lisible quelle que soit
+                     la photo (une image claire rendait le texte en surimpression
+                     illisible). La vignette 480 px est celle déjà générée pour
+                     le carousel : aucun fichier supplémentaire. --}}
+                <ul class="grid gap-3 sm:gap-4 md:grid-cols-2">
+                    @foreach ($featuredUniverses as $universe)
+                        <li>
+                            <a href="{{ $universe->url }}"
+                               class="group flex h-full items-center gap-4 rounded-xl bg-white p-3 ring-1 ring-black/5 transition-shadow hover:shadow-[0_2px_16px_rgba(0,0,0,0.06)] focus:outline-none focus:ring-2 focus:ring-[#dfb54e]">
+                                <span class="h-20 w-20 shrink-0 overflow-hidden rounded-lg bg-[#faf8f4] sm:h-24 sm:w-24">
+                                    <img src="{{ \App\Support\ImageStorage::variantUrl($universe->visual_url, 480) }}"
+                                         alt="{{ $universe->name }}"
+                                         width="480" height="480" loading="lazy" decoding="async"
+                                         class="h-full w-full object-cover transition-transform duration-500 group-hover:scale-[1.05]"
+                                         sizes="96px">
+                                </span>
+
+                                <span class="min-w-0 flex-1">
+                                    <span class="block text-[15px] font-medium leading-snug text-gray-900 transition-colors group-hover:text-[#dfb54e]">
+                                        {{ $universe->name }}
+                                    </span>
+                                    @if ($universe->short_description)
+                                        <span class="mt-1 line-clamp-2 text-xs leading-relaxed text-gray-500 sm:text-[13px]">
+                                            {{ \Illuminate\Support\Str::limit($universe->short_description, 90) }}
+                                        </span>
+                                    @endif
+                                    <span class="mt-2 inline-block border-b border-gray-300 pb-0.5 text-[11px] uppercase tracking-[0.12em] text-gray-500 transition-colors group-hover:border-[#dfb54e] group-hover:text-[#dfb54e]">
+                                        Découvrir
+                                    </span>
+                                </span>
+
+                                <span aria-hidden="true"
+                                      class="shrink-0 text-gray-300 transition-all duration-300 group-hover:translate-x-1 group-hover:text-[#dfb54e]">&rarr;</span>
+                            </a>
+                        </li>
+                    @endforeach
+                </ul>
                 </div>
             </div>
+        </section>
+    @endif
+
+    {{-- ================= RÉASSURANCE =================
+         Uniquement des informations issues de la configuration réelle :
+         aucune promesse de retour, de garantie ou de gratuité inventée. --}}
+    <section class="py-14 md:py-20" aria-labelledby="reassurance-title">
+        <div class="container mx-auto px-5 sm:px-6">
+            <h2 id="reassurance-title" class="mb-8 text-center text-2xl font-semibold tracking-tight text-gray-900 md:mb-12 md:text-3xl">
+                Pourquoi choisir {{ $config->site_name }}
+            </h2>
+
+            @php
+                $assurances = collect([
+                    [
+                        'icon' => 'fa-gem',
+                        'title' => 'Une sélection soignée',
+                        'text' => 'Chaque pièce est choisie pour sa matière et sa finition.',
+                    ],
+                    $config->city ? [
+                        'icon' => 'fa-truck',
+                        'title' => 'Expédition depuis ' . $config->city,
+                        'text' => ($config->delivery_estimate_days ?? 0) > 0
+                            ? 'Livraison estimée sous ' . $config->delivery_estimate_days . ' jour(s).'
+                            : 'Vos commandes préparées avec soin.',
+                    ] : null,
+                    ($config->free_shipping_threshold ?? 0) > 0 ? [
+                        'icon' => 'fa-box-open',
+                        'title' => 'Livraison offerte',
+                        'text' => "Dès " . number_format($config->free_shipping_threshold, 0, ',', ' ') . " DT d'achat.",
+                    ] : null,
+                    ($config->support_phone || $config->support_email) ? [
+                        'icon' => 'fa-headset',
+                        'title' => 'Une équipe joignable',
+                        'text' => $config->support_phone ?: $config->support_email,
+                    ] : null,
+                ])->filter()->values();
+            @endphp
+
+            <ul class="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-{{ min(4, max(1, $assurances->count())) }}">
+                @foreach ($assurances as $item)
+                    <li class="rounded-2xl border border-gray-100 p-6 text-center">
+                        <span class="mx-auto mb-4 flex h-11 w-11 items-center justify-center rounded-full bg-[#faf8f4]">
+                            <i class="fa-solid {{ $item['icon'] }} text-[#dfb54e]" aria-hidden="true"></i>
+                        </span>
+                        <h3 class="text-[15px] font-medium text-gray-900">{{ $item['title'] }}</h3>
+                        <p class="mt-1.5 text-sm text-gray-500">{{ $item['text'] }}</p>
+                    </li>
+                @endforeach
+            </ul>
         </div>
     </section>
 
@@ -428,7 +432,7 @@
                         <a href="{{ route('preview-inspiration', $inspiration->slug) }}"
                             class="relative group overflow-hidden rounded-xl h-64">
                             {{-- Image --}}
-                            <img src="{{ asset('storage/' . $inspiration->image) }}" alt="{{ $inspiration->title }}"
+                            <img src="{{ $inspiration->image ? asset('storage/' . $inspiration->image) : asset('images/no-image.png') }}" alt="{{ $inspiration->title }}"
                                 class="w-full h-full object-cover group-hover:scale-105 transition duration-500"
                                 loading="lazy" width="500" height="320" decoding="async"
                                 sizes="(min-width: 1024px) 25vw,
@@ -469,7 +473,8 @@
         </section>
     @endif
 
-    <!-- TÉMOIGNAGES -->
+    <!-- TÉMOIGNAGES — masqués tant qu'aucun avis n'est approuvé -->
+    @if ($testimonials->isNotEmpty())
     <section class="py-16 bg-white">
         <div class="container mx-auto px-6">
             <div class="text-center mb-12">
@@ -490,8 +495,12 @@
                         </div>
                         <p class="text-gray-600 mb-6">{{ Str::limit($testimonial->comment, 150, '...') }}</p>
                         <div class="flex items-center">
-                            <img src="https://i.pravatar.cc/128?img={{ rand(1, 70) }}" loading="lazy"  alt="{{ $testimonial->name }} | {{ $config->site_name }}"
-                                class="w-8 h-8 rounded-full mr-2">
+                            {{-- Aucune photo client n'est collectée : l'avatar est composé
+                                 des initiales, sans dépendance à un service externe. --}}
+                            <span aria-hidden="true"
+                                class="mr-2 flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-gray-200 text-xs font-semibold text-gray-700">
+                                {{ Str::of($testimonial->name)->explode(' ')->filter()->take(2)->map(fn ($part) => Str::upper(Str::substr($part, 0, 1)))->implode('') }}
+                            </span>
                             <div>
                                 <h3 class="font-bold">{{ $testimonial->name }}</h3>
                                 <p class="text-gray-500 text-sm">{{ $testimonial->location ?? 'Non spécifié' }}</p>
@@ -506,6 +515,46 @@
             </div>
         </div>
     </section>
+    @endif
+
+    {{-- ================= CONTENU SEO ================= --}}
+    <section class="border-t border-gray-100 bg-[#faf8f4] py-12 md:py-16" aria-labelledby="seo-title">
+        <div class="container mx-auto max-w-3xl px-5 sm:px-6">
+            <h2 id="seo-title" class="text-xl font-semibold tracking-tight text-gray-900 md:text-2xl">
+                {{ $config->site_name }}, votre univers décoration en Tunisie
+            </h2>
+
+            <div class="mt-4 space-y-3 text-sm leading-relaxed text-gray-600">
+                <p>
+                    {{ $config->site_name }} réunit une sélection d'objets de décoration pour la maison :
+                    @if ($rootCategories->isNotEmpty())
+                        {{ $rootCategories->pluck('name')->implode(', ') }}.
+                    @else
+                        accessoires, textiles et pièces décoratives.
+                    @endif
+                    Chaque référence est présentée avec ses caractéristiques et ses dimensions
+                    pour vous aider à choisir sereinement.
+                </p>
+                @php
+                    // Phrase assemblée en PHP : enchaîner des directives Blade
+                    // sur une même ligne empêche la compilation de la seconde.
+                    $deliveryParts = array_filter([
+                        $config->city ? 'depuis toute la Tunisie, au départ de ' . $config->city : null,
+                        ($config->delivery_estimate_days ?? 0) > 0
+                            ? 'avec une livraison estimée sous ' . $config->delivery_estimate_days . ' jour(s)'
+                            : null,
+                    ]);
+                @endphp
+                <p>
+                    Vous pouvez commander en ligne{{ $deliveryParts ? ' ' . implode(', ', $deliveryParts) : '' }}.
+                    Une question sur un article ou sur votre commande ?
+                    <a href="{{ route('contact') }}" class="text-[#a8842f] underline underline-offset-2 hover:text-[#dfb54e]">Contactez-nous</a>,
+                    ou consultez notre <a href="{{ route('faq') }}" class="text-[#a8842f] underline underline-offset-2 hover:text-[#dfb54e]">foire aux questions</a>.
+                </p>
+            </div>
+        </div>
+    </section>
+
 @endsection
 
 @section('css')
@@ -522,6 +571,37 @@
             object-fit: cover;
             width: 100%;
             height: 80vh;
+        }
+
+        /* Carousel catégories : tant que Swiper n'a pas pris la main (script
+           différé, ou JavaScript indisponible), les cartes restent parcourables
+           au doigt plutôt que d'être coupées. */
+        .js-carousel-univers:not(.swiper-initialized) {
+            overflow-x: auto;
+            scrollbar-width: none;
+        }
+
+        .js-carousel-univers:not(.swiper-initialized)::-webkit-scrollbar {
+            display: none;
+        }
+
+        .js-carousel-univers:not(.swiper-initialized) .swiper-slide {
+            width: 44%;
+            margin-right: 12px;
+        }
+
+        @media (min-width: 768px) {
+            .js-carousel-univers:not(.swiper-initialized) .swiper-slide {
+                width: 23%;
+                margin-right: 18px;
+            }
+        }
+
+        @media (min-width: 1024px) {
+            .js-carousel-univers:not(.swiper-initialized) .swiper-slide {
+                width: 19%;
+                margin-right: 22px;
+            }
         }
 
         /* Hide scrollbar for products carousel */
@@ -746,29 +826,49 @@
     <script src="https://cdn.jsdelivr.net/npm/swiper@10/swiper-bundle.min.js" defer></script>
     <script>
         document.addEventListener('DOMContentLoaded', () => {
-            new Swiper('.mySwiper', {
-                slidesPerView: 1.2, // 1 slide + aperçu
-                spaceBetween: 20,
-                loop: true,
-                grabCursor: true,
-                autoplay: {
-                    delay: 6500
-                },
-                breakpoints: { // responsive
-                    640: {
-                        slidesPerView: 2
-                    },
-                    768: {
-                        slidesPerView: 3
-                    },
-                    1024: {
-                        slidesPerView: 4
-                    }
-                },
-                navigation: {
-                    nextEl: '.swiper-button-next',
-                    prevEl: '.swiper-button-prev',
+            if (typeof Swiper === 'undefined') {
+                return;
+            }
+
+            // Pas d'autoplay : le défilement reste à la main du visiteur.
+            document.querySelectorAll('[class*="js-carousel-"]').forEach((node) => {
+                const uid = (node.className.match(/js-carousel-([\w-]+)/) || [])[1];
+
+                if (!uid) {
+                    return;
                 }
+
+                // Réglages produits par défaut : 2 cartes lisibles dès 375 px,
+                // 4 en desktop. Un carousel peut les surcharger via data-swiper
+                // (les catégories, plus compactes, en affichent davantage).
+                let surcharge = {};
+
+                try {
+                    surcharge = JSON.parse(node.dataset.swiper || '{}');
+                } catch (e) {
+                    surcharge = {};
+                }
+
+                new Swiper(node, {
+                    slidesPerView: 2,
+                    spaceBetween: 12,
+                    breakpoints: {
+                        640: { slidesPerView: 2, spaceBetween: 16 },
+                        768: { slidesPerView: 3, spaceBetween: 20 },
+                        1024: { slidesPerView: 4, spaceBetween: 24 },
+                    },
+                    ...surcharge,
+                    grabCursor: true,
+                    watchOverflow: true,
+                    a11y: {
+                        prevSlideMessage: node.dataset.prevLabel || 'Produits précédents',
+                        nextSlideMessage: node.dataset.nextLabel || 'Produits suivants',
+                    },
+                    navigation: {
+                        prevEl: `.js-prev-${uid}`,
+                        nextEl: `.js-next-${uid}`,
+                    },
+                });
             });
         });
     </script>

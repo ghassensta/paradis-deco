@@ -51,7 +51,7 @@ public function getCommandes(Request $request)
         'statut:id,name',
         'client:id,name,adresse,phone',
         'items' => function ($query) {
-            $query->select('order_items.id', 'order_items.order_id', 'order_items.product_id', 'order_items.quantity', 'order_items.unit_price', 'order_items.subtotal')
+            $query->select('order_items.id', 'order_items.order_id', 'order_items.product_id', 'order_items.variant_label', 'order_items.quantity', 'order_items.unit_price', 'order_items.subtotal')
                 ->with(['product:id,name,images']);
         }
     ]);
@@ -89,7 +89,7 @@ public function getCommandes(Request $request)
 
         return [
             'id' => $row->id,
-            'numero_commande' => $row->numero_commande,
+            'numero_commande' => e($row->numero_commande),
             'date' => $row->created_at->format('d/m/Y'),
             'date_full' => $row->created_at->format('d/m/Y H:i'),
             'client_name' => optional($row->client)->name ?? 'N/A',
@@ -111,7 +111,8 @@ public function getCommandes(Request $request)
                 }
 
                 return [
-                    'name' => optional($item->product)->name ?? 'Produit supprimé',
+                    'name' => (optional($item->product)->name ?? 'Produit supprimé')
+                        . ($item->variant_label ? ' — ' . $item->variant_label : ''),
                     'image' => !empty($images) ? $images[0] : null,
                     'quantity' => $item->quantity,
                     'unit_price' => number_format($item->unit_price ?? 0, 3, '.', ''),
@@ -192,14 +193,14 @@ public function getCommandes(Request $request)
                 'image_avant' => $p->image_avant, // Include cover image
                 'images' => $p->images ?? [],
                 'categories' => $categoryNames,
-                'name' => $p->name,
-                'description' => $p->description,
+                'name' => e($p->name),
+                'description' => e($p->description),
                 'price' => $p->price,
                 'stock' => $p->stock,
                 'is_active' => $p->is_active,
-                'meta_title' => $p->meta_title,
-                'meta_description' => $p->meta_description,
-                'meta_keywords' => $p->meta_keywords,
+                'meta_title' => e($p->meta_title),
+                'meta_description' => e($p->meta_description),
+                'meta_keywords' => e($p->meta_keywords),
                 'slug' => $p->slug,
             ];
         });
@@ -232,15 +233,28 @@ public function getCommandes(Request $request)
             'image' => 'image', // Changed from image_url
             'name' => 'name',
             'is_active' => 'is_active',
+            'sort_order' => 'sort_order',
             'created_at' => 'created_at',
         ];
         $orderBy = $sortable[$columnName] ?? 'created_at';
 
         // Build query
-        $query = Category::select(['id', 'image', 'name', 'is_active', 'created_at']);
+        $query = Category::with('parent:id,name')
+            ->select(['id', 'parent_id', 'image', 'name', 'is_active', 'sort_order', 'created_at']);
 
         if ($searchValue !== '') {
             $query->where('name', 'like', "%{$searchValue}%");
+        }
+
+        // Filtres du back-office : type de catégorie et statut.
+        if (($type = $request->input('type')) === 'root') {
+            $query->whereNull('parent_id');
+        } elseif ($type === 'child') {
+            $query->whereNotNull('parent_id');
+        }
+
+        if (($status = $request->input('status')) !== null && $status !== '') {
+            $query->where('is_active', (bool) $status);
         }
 
         $totalRecords = $query->count();
@@ -254,8 +268,12 @@ public function getCommandes(Request $request)
         $data = $categories->map(fn($category) => [
             'id' => $category->id,
             'image' => $category->image_url ? '<img src="' . $category->image_url . '" width="50" alt="Category Image">' : '-',
-            'name' => $category->name,
+            'name' => e($category->name),
+            'parent' => $category->parent
+                ? '<span class="badge bg-label-info">' . e($category->parent->name) . '</span>'
+                : '<span class="text-muted">—</span>',
             'is_active' => $category->is_active ? '<span class="badge bg-label-success">Active</span>' : '<span class="badge bg-label-warning">Inactive</span>',
+            'sort_order' => $category->sort_order,
             'created_at' => $category->created_at->format('Y-m-d H:i:s'),
         ]);
 
@@ -419,14 +437,17 @@ public function getCommandes(Request $request)
             ->get();
 
         // Map data for DataTables
+        // Les valeurs ci-dessous sont réinjectées en HTML par le render()
+        // des DataTables : un commentaire client contenant <script> s'y
+        // exécuterait. Échappement fait ici, à la source des données.
         $data_arr = $avis->map(function ($row) {
             return [
                 'id' => $row->id,
                 'date' => $row->created_at?->format('d-m-Y') ?? 'N/A',
                 'product' => optional($row->product)->name ?? 'N/A',
                 'rating' => $row->rating ?? 0,
-                'comment' => $row->comment ?? 'N/A',
-                'name' => $row->name ?? 'N/A',
+                'comment' => e($row->comment ?? 'N/A'),
+                'name' => e($row->name ?? 'N/A'),
                 'approved' => $row->approved ? 'Approuvé' : 'En attente'
             ];
         })->toArray();

@@ -1,22 +1,25 @@
 @extends('front-office.layouts.app')
-@section('title', $product->meta_title)
+
+@php
+    $variants = $product->storefrontVariants();
+    // Variante présélectionnée : la première disponible, pour que le prix et
+    // l'image affichés correspondent à ce qui part au panier dès le chargement.
+    $selectedVariant = collect($variants)->first(fn ($v) => $v['stock'] > 0) ?? ($variants[0] ?? null);
+    $displayPrice = $selectedVariant['price'] ?? $product->price;
+    $displayStock = $selectedVariant['stock'] ?? $product->stock;
+    $displayImage = $selectedVariant['image'] ?? $product->cover_url;
+@endphp
+@section('description', $product->seo_description)
+@section('title', $product->seo_title)
 @section('meta')
     <meta charset="utf-8">
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="robots" content="index,follow,max-snippet:-1,max-image-preview:large,max-video-preview:-1">
     <meta name="theme-color" content="#FDD835">
-    <meta name="description"
-        content="{{ $product->meta_description ?? Str::limit(strip_tags($product->description), 155) }}">
     <link rel="canonical" href="{{ url()->current() }}">
     <link rel="alternate" href="{{ url()->current() }}" hreflang="fr-tn">
     <link rel="alternate" href="{{ url()->current() }}" hreflang="x-default">
-    <meta property="og:locale" content="fr_TN">
-    <meta property="og:type" content="product">
-    <meta property="og:site_name" content="{{ config('app.name') }}">
-    <meta property="og:title" content="{{ $product->meta_title ?? $product->name }}">
-    <meta property="og:description"
-        content="{{ $product->meta_description ?? Str::limit(strip_tags($product->description), 155) }}">
         <meta name="keywords" content="{{
     isset($product->meta_keywords)
         ? (is_array($product->meta_keywords)
@@ -25,67 +28,111 @@
         : ''
 }}">
 
-    <meta property="og:url" content="{{ url()->current() }}">
-    <meta property="og:image" content="{{ asset('storage/' . ($product->image_avant ?? 'default.jpg')) }}">
     <meta property="og:image:width" content="1200">
     <meta property="og:image:height" content="630">
     <meta property="product:availability" content="{{ $product->stock > 0 ? 'in stock' : 'out of stock' }}">
     <meta property="product:price:amount" content="{{ number_format($product->price, 2) }}">
     <meta property="product:price:currency" content="TND">
-    <meta name="twitter:card" content="summary_large_image">*
-    <meta name="keywords" content="{{ isset($product->keywords) ? implode(',', is_array($product->keywords) ? $product->keywords : explode(',', $product->keywords)) : '' }}">
+    @php
+        // Données structurées construites via json_encode : échappement garanti,
+        // aucune clé inventée, et les champs absents sont simplement omis.
+        $schemaImages = collect([$product->image_avant])
+            ->merge($images)
+            ->filter()
+            ->map(fn ($path) => \App\Models\Product::mediaUrl($path))
+            ->values();
 
+        $productSchema = [
+            '@context' => 'https://schema.org',
+            '@type' => 'Product',
+            'name' => $product->name,
+            // Priorité : résumé dédié, sinon description longue. RichText::toText
+            // nettoie le HTML avant extraction : aucun balisage ni code résiduel.
+            'description' => Str::limit(
+                \App\Support\RichText::toText($product->description_courte ?: $product->description ?: $product->name),
+                300
+            ),
+            'sku' => $product->sku ?: (string) $product->id,
+            'brand' => ['@type' => 'Brand', 'name' => config('app.name')],
+            'url' => route('preview-article', $product->slug),
+            'offers' => [
+                '@type' => 'Offer',
+                'url' => route('preview-article', $product->slug),
+                'priceCurrency' => 'TND',
+                'price' => number_format((float) $product->price, 2, '.', ''),
+                'availability' => $product->stock > 0
+                    ? 'https://schema.org/InStock'
+                    : 'https://schema.org/OutOfStock',
+            ],
+        ];
+
+        // Une offre par variante : prix et disponibilité réels de chaque option.
+        if ($variants !== []) {
+            $productSchema['offers'] = collect($variants)->map(fn ($variant) => [
+                '@type' => 'Offer',
+                'name' => $variant['label'],
+                'url' => route('preview-article', ['slug' => $product->slug, 'variant' => $variant['id']]),
+                'image' => $variant['image'],
+                'priceCurrency' => 'TND',
+                'price' => number_format($variant['price'], 2, '.', ''),
+                'availability' => $variant['stock'] > 0
+                    ? 'https://schema.org/InStock'
+                    : 'https://schema.org/OutOfStock',
+            ])->all();
+        }
+
+        if ($schemaImages->isNotEmpty()) {
+            $productSchema['image'] = $schemaImages->all();
+        }
+
+        // Aucune note n'est déclarée tant qu'aucun avis approuvé n'existe.
+        if ($totalReviews > 0) {
+            $productSchema['aggregateRating'] = [
+                '@type' => 'AggregateRating',
+                'ratingValue' => number_format((float) $averageRating, 1, '.', ''),
+                'reviewCount' => $totalReviews,
+            ];
+        }
+    @endphp
+    <script type="application/ld+json">
+    {!! json_encode($productSchema, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE) !!}
+    </script>
 
     <script type="application/ld+json">
-{
-    "@context": "https://schema.org",
-    "@type": "Product",
-    "name": "{{ $product->name }}",
-    "image": [
-        "{{ Storage::url($product->image_avant) }}",
-        @foreach($images as $img)
-        "{{ Storage::url($img) }}"@if(!$loop->last),@endif
-        @endforeach
-    ],
-    "description": "{{ Str::limit(strip_tags($product->description), 160) }}",
-    "sku": "{{ $product->id }}",
-    "brand": { "@type": "Brand", "name": "Paradis Déco" },
-    "offers": {
-        "@type": "Offer",
-        "url": "{{ url()->current() }}",
-        "priceCurrency": "TND",
-        "price": "{{ number_format($product->price, 2) }}",
-        "availability": "https://schema.org/{{ $product->stock > 0 ? 'InStock' : 'OutOfStock' }}"
-    },
-    "aggregateRating": {
-        "@type": "AggregateRating",
-        "ratingValue": "{{ $averageRating }}",
-        "reviewCount": "{{ $totalReviews }}"
-    }
-}
-</script>
+    {!! json_encode([
+        '@context' => 'https://schema.org',
+        '@type' => 'BreadcrumbList',
+        'itemListElement' => collect($breadcrumbs)->values()->map(fn ($item, $i) => [
+            '@type' => 'ListItem',
+            'position' => $i + 1,
+            'name' => $item['name'],
+            'item' => $item['url'],
+        ])->all(),
+    ], JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE) !!}
+    </script>
 
 
 @endsection
+@section('og_image', $product->cover_url)
 
 @section('content')
     <!-- Breadcrumb -->
     <div class="bg-gray-100 py-3">
         <div class="max-w-7xl mx-auto px-4">
-            <nav class="flex text-sm" aria-label="Breadcrumb">
-                <ol class="flex items-center space-x-2">
-                    <li>
-                        <a href="/" class="text-gray-500 hover:text-yellow-600">Accueil</a>
-                    </li>
-                    <li class="text-gray-400">/</li>
-                    <li>
-                        <a href="{{ route('allproduits') }}" class="text-gray-500 hover:text-yellow-600">Tous les
-                            produits</a>
-                    </li>
-                    <li class="text-gray-400">/</li>
-                    <li>
-                        <a href="{{ url()->current() }}" class="text-gray-500 text-yellow-600">{{ $product->name }}</a>
-                    </li>
+            <nav class="flex text-sm" aria-label="Fil d'Ariane">
+                <ol class="flex flex-wrap items-center gap-x-2">
+                    @foreach ($breadcrumbs as $crumb)
+                        @unless ($loop->first)
+                            <li class="text-gray-400" aria-hidden="true">/</li>
+                        @endunless
+                        <li>
+                            @if ($loop->last)
+                                <span class="text-yellow-600 font-medium" aria-current="page">{{ $crumb['name'] }}</span>
+                            @else
+                                <a href="{{ $crumb['url'] }}" class="text-gray-500 hover:text-yellow-600">{{ $crumb['name'] }}</a>
+                            @endif
+                        </li>
+                    @endforeach
                 </ol>
             </nav>
         </div>
@@ -97,7 +144,7 @@
             <!-- Product Gallery -->
             <div class="lg:sticky lg:top-4">
                 <div class="relative mb-4 bg-white rounded-xl shadow-sm overflow-hidden group">
-                    <img id="mainImage" src="{{ Storage::url($product->image_avant ?? 'default.jpg') }}"
+                    <img id="mainImage" src="{{ $displayImage }}"
                         alt="{{ $product->name }} - image principale"
                         class="w-full h-96 object-contain main-image transform group-hover:scale-105 transition-transform duration-300" />
                     <button id="prevImage"
@@ -133,7 +180,7 @@
                         class="w-20 h-20 object-cover rounded-md cursor-pointer border-2 border-transparent hover:border-yellow-600 transform transition-all duration-300 hover:scale-105"
                         data-index="{{ $index }}" />
                 @empty
-                    <img src="{{ asset('storage/default.jpg') }}"
+                    <img src="{{ asset('images/no-image.png') }}"
                         alt="Image par défaut"
                         class="w-20 h-20 object-cover rounded-md cursor-pointer border-2 border-transparent hover:border-yellow-600 transform transition-all duration-300 hover:scale-105" />
                 @endforelse
@@ -181,51 +228,77 @@
         <span class="mx-2 text-gray-300">|</span>
 
         {{-- Stock --}}
-        @if ($product->stock > 0)
-            <span class="flex items-center text-sm text-green-600">
-                <i class="fas fa-check-circle mr-1"></i> En stock
-            </span>
-        @else
-            <span class="flex items-center text-sm text-red-600">
-                <i class="fas fa-times-circle mr-1"></i> Rupture de stock
-            </span>
-        @endif
+        <span id="stockInStock" class="{{ $displayStock > 0 ? 'flex' : 'hidden' }} items-center text-sm text-green-600">
+            <i class="fas fa-check-circle mr-1"></i> En stock
+        </span>
+        <span id="stockOut" class="{{ $displayStock > 0 ? 'hidden' : 'flex' }} items-center text-sm text-red-600">
+            <i class="fas fa-times-circle mr-1"></i> Rupture de stock
+        </span>
     </div>
 </div>
 
                     <div class="mb-6">
-                        <p class="text-3xl font-bold text-gray-900">{{ number_format($product->price, 2) }} DT</p>
+                        <p class="text-3xl font-bold text-gray-900"><span id="productPrice">{{ number_format($displayPrice, 2) }}</span> DT</p>
                         <p class="text-sm text-gray-500">TVA incluse</p>
                     </div>
                     <div class="mb-6">
-                        <h2 class="text-lg font-semibold mb-2">Description</h2>
-                        <p class="text-gray-600">{{ $product->description }}</p>
+                        {{-- Résumé : le détail complet vit dans sa propre section plus bas. --}}
+                        @if (filled($product->short_description))
+                            <p class="text-gray-600 leading-relaxed">{{ $product->short_description }}</p>
+                        @endif
                     </div>
+                    @if ($variants !== [])
+                        <div id="variantPicker" class="mb-6 space-y-4">
+                            @foreach (['type' => 'Type', 'size' => 'Taille'] as $axis => $axisLabel)
+                                @php $axisValues = collect($variants)->pluck($axis)->filter()->unique()->values(); @endphp
+                                @if ($axisValues->isNotEmpty())
+                                    <fieldset>
+                                        <legend class="mb-2 text-sm font-medium text-gray-900">
+                                            {{ $axisLabel }} :
+                                            <span class="font-normal text-gray-600" data-axis-selected="{{ $axis }}">{{ $selectedVariant[$axis] }}</span>
+                                        </legend>
+                                        <div class="flex flex-wrap gap-2">
+                                            @foreach ($axisValues as $value)
+                                                <button type="button" data-axis="{{ $axis }}" data-value="{{ $value }}"
+                                                    aria-pressed="{{ $selectedVariant[$axis] === $value ? 'true' : 'false' }}"
+                                                    class="variant-option rounded-lg border px-4 py-2 text-sm font-medium transition focus:outline-none focus:ring-2 focus:ring-yellow-500">
+                                                    {{ $value }}
+                                                </button>
+                                            @endforeach
+                                        </div>
+                                    </fieldset>
+                                @endif
+                            @endforeach
+                        </div>
+                    @endif
                     <div class="mb-6">
                         <div class="flex items-center space-x-4">
                             <div class="flex items-center border border-gray-300 rounded-lg">
                                 <button
-                                    class="px-3 py-2 text-gray-600 hover:text-yellow-600 {{ $product->stock == 0 ? 'opacity-50 cursor-not-allowed' : '' }}"
-                                    onclick="updateQuantity(-1, {{ $product->id }}, {{ $product->stock }})"
-                                    aria-label="Diminuer la quantité" {{ $product->stock == 0 ? 'disabled' : '' }}>
+                                    class="js-quantity-button px-3 py-2 text-gray-600 hover:text-yellow-600 {{ $displayStock == 0 ? 'opacity-50 cursor-not-allowed' : '' }}"
+                                    onclick="changeQuantity(-1)"
+                                    aria-label="Diminuer la quantité" {{ $displayStock == 0 ? 'disabled' : '' }}>
                                     <i class="fas fa-minus"></i>
                                 </button>
                                 <span id="quantity" class="px-3 py-1">1</span>
                                 <button
-                                    class="px-3 py-2 text-gray-600 hover:text-yellow-600 {{ $product->stock == 0 ? 'opacity-50 cursor-not-allowed' : '' }}"
-                                    onclick="updateQuantity(1, {{ $product->id }}, {{ $product->stock }})"
-                                    aria-label="Augmenter la quantité" {{ $product->stock == 0 ? 'disabled' : '' }}>
+                                    class="js-quantity-button px-3 py-2 text-gray-600 hover:text-yellow-600 {{ $displayStock == 0 ? 'opacity-50 cursor-not-allowed' : '' }}"
+                                    onclick="changeQuantity(1)"
+                                    aria-label="Augmenter la quantité" {{ $displayStock == 0 ? 'disabled' : '' }}>
                                     <i class="fas fa-plus"></i>
                                 </button>
                             </div>
-                            <button
-                                class="flex-1 bg-yellow-600 hover:bg-yellow-700 text-white py-3 px-6 rounded-lg font-medium transition flex items-center justify-center focus:outline-none focus:ring-2 focus:ring-yellow-500 {{ $product->stock == 0 ? 'opacity-50 cursor-not-allowed' : '' }}"
+                            <button id="addToCartButton"
+                                class="flex-1 bg-yellow-600 hover:bg-yellow-700 text-white py-3 px-6 rounded-lg font-medium transition flex items-center justify-center focus:outline-none focus:ring-2 focus:ring-yellow-500 {{ $displayStock == 0 ? 'opacity-50 cursor-not-allowed' : '' }}"
                                 data-id="{{ $product->id }}" data-name="{{ $product->name }}"
-                                data-price="{{ $product->price }}"
-                                data-image="{{ Storage::url($product->image_avant ?? 'default.jpg') }}"
-                                data-stock="{{ $product->stock }}" onclick="addToCart(this)"
+                                data-price="{{ $displayPrice }}"
+                                data-image="{{ $displayImage }}"
+                                data-stock="{{ $displayStock }}" data-quantity="1"
+                                data-variant-id="{{ $selectedVariant['id'] ?? '' }}"
+                                data-variant-label="{{ $selectedVariant['label'] ?? '' }}"
+                                onclick="addToCart(this)"
                                 aria-label="Ajouter {{ $product->name }} au panier"
-                                {{ $product->stock == 0 ? 'disabled' : '' }}>
+                                {{ $displayStock == 0 ? 'disabled' : '' }}>
                                 <i class="fas fa-shopping-cart mr-2"></i> Ajouter au panier
                                 <svg class="animate-spin h-5 w-5 text-white hidden ml-2" id="addToCartSpinner"
                                     xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
@@ -263,11 +336,41 @@
             </div>
         </div>
 
+        {{-- Description détaillée --}}
+        @if ($product->hasDistinctLongDescription())
+            <section class="mt-12 bg-white rounded-xl shadow-sm overflow-hidden" aria-labelledby="description-produit">
+                <div class="p-6">
+                    <h2 id="description-produit" class="text-xl md:text-2xl font-bold text-gray-900 mb-4">
+                        Description de {{ $product->name }}
+                    </h2>
+                    {{-- HTML déjà nettoyé par App\Support\RichText (liste blanche
+                         de balises, aucun script ni attribut d'événement). --}}
+                    <div class="product-description max-w-none text-gray-700">
+                        {!! $product->safe_description !!}
+                    </div>
+
+                    @if ($primaryCategory)
+                        <p class="mt-6 text-sm text-gray-500">
+                            Retrouvez ce produit dans la catégorie
+                            <a href="{{ $primaryCategory->url }}" class="text-yellow-600 hover:underline">{{ $primaryCategory->name }}</a>@if ($primaryCategory->parent)
+                                , rayon <a href="{{ $primaryCategory->parent->url }}" class="text-yellow-600 hover:underline">{{ $primaryCategory->parent->name }}</a>@endif.
+                        </p>
+                    @endif
+                </div>
+            </section>
+        @endif
+
+        @include('front-office.partials.faq', [
+            'faqs' => $productFaqs,
+            'heading' => 'Questions fréquentes sur ' . $product->name,
+            'uid' => 'faq-produit',
+        ])
+
         <!-- Reviews Section -->
         <div class="mt-12 bg-white rounded-xl shadow-sm overflow-hidden">
             <div class="p-6">
                 <div class="mb-8">
-                    <h3 class="text-lg font-semibold mb-4">Avis clients</h3>
+                    <h2 class="text-lg font-semibold mb-4">Avis clients</h2>
                     <div class="flex items-center mb-6">
                         <div class="mr-4">
                             <span class="text-4xl font-bold">{{ $averageRating }}</span>
@@ -403,7 +506,7 @@
                             <div class="relative overflow-hidden flex-grow">
                                 <a href="{{ route('preview-article', $item->slug) }}" target="_blank"
                                     title="{{ $item->meta_title ?? $item->name }}" class="block h-full">
-                                    <img src="{{ asset('storage/' . ($item->image_avant ?? 'default.jpg')) }}"
+                                    <img src="{{ $item->cover_url }}"
                                         alt="{{ $item->name }}"
                                         class="h-48 sm:h-56 w-full object-cover group-hover:scale-105 transition-transform duration-500 ease-in-out"
                                         loading="lazy" />
@@ -440,18 +543,25 @@
                                         </div>
                                     </div>
                                     <p class="text-gray-500 text-sm mb-4 line-clamp-2">
-                                        {{ Str::limit($item->description, 60) }}</p>
+                                        {{ Str::limit($item->short_description, 60) }}</p>
                                 </div>
                                 <div class="mt-auto">
                                     <div class="flex justify-between items-center">
                                         <p class="text-black font-bold text-lg" >
+                                            @if ($item->has_variants)<span class="block text-xs font-normal text-gray-500">À partir de</span>@endif
                                             <span >{{ number_format($item->price, 2) }}</span> DT
                                             <meta  content="TND">
                                         </p>
+                                        @if ($item->has_variants)
+                                            <a href="{{ route('preview-article', $item->slug) }}" aria-label="Choisir une option pour {{ $item->name }}"
+                                               class="flex items-center justify-center bg-black hover:bg-gray-800 text-white px-3 py-2 rounded-lg transition-colors duration-300">
+                                                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
+                                            </a>
+                                        @else
                                         <button aria-label="Ajouter {{ $item->name }} au panier"
                                             data-id="{{ $item->id }}" data-name="{{ $item->name }}"
                                             data-price="{{ $item->price }}"
-                                            data-image="{{ asset('storage/' . ($item->image_avant ?? 'default.jpg')) }}"
+                                            data-image="{{ $item->cover_url }}"
                                             data-stock="{{ $item->stock }}"
                                             class="cursor-pointer flex items-center justify-center gap-1 bg-black hover:bg-gray-800 text-white px-3 py-2 rounded-lg transition-colors duration-300 focus:outline-none focus:ring-2 focus:ring-yellow-500 focus:ring-opacity-50 transform hover:scale-[1.03] active:scale-95 text-sm sm:text-base"
                                             @if ($item->stock == 0) disabled @endif onclick="addToCart(this)">
@@ -462,11 +572,12 @@
                                             </svg>
                                             <span class="hidden sm:inline">Ajouter</span>
                                         </button>
+                                        @endif
                                     </div>
                                 </div>
                             </div>
                             <meta
-                                content="{{ $item->meta_description ?? Str::limit($item->description, 80) }}">
+                                content="{{ $item->meta_description ?? Str::limit($item->short_description, 80) }}">
                             <meta  content="{{ route('preview-article', $item->slug) }}">
                         </article>
                     @endif
@@ -527,6 +638,31 @@
 
 @section('css')
     <style>
+        /* Mise en forme du contenu éditorial de la description longue. */
+        .product-description { line-height: 1.75; overflow-wrap: anywhere; }
+        .product-description > *:first-child { margin-top: 0; }
+        .product-description p { margin: 0 0 1rem; }
+        .product-description h2 { font-size: 1.25rem; font-weight: 700; color: #1f2937; margin: 1.75rem 0 .75rem; }
+        .product-description h3 { font-size: 1.05rem; font-weight: 600; color: #374151; margin: 1.5rem 0 .5rem; }
+        .product-description ul,
+        .product-description ol { margin: 0 0 1rem; padding-left: 1.5rem; }
+        .product-description ul { list-style: disc; }
+        .product-description ol { list-style: decimal; }
+        .product-description li { margin-bottom: .35rem; }
+        .product-description a { color: #b8860b; text-decoration: underline; }
+        .product-description a:hover { color: #92400e; }
+        .product-description strong { font-weight: 600; color: #111827; }
+        .product-description blockquote {
+            margin: 1.25rem 0; padding: .5rem 0 .5rem 1rem;
+            border-left: 3px solid #dfb54e; color: #4b5563; font-style: italic;
+        }
+        @media (max-width: 640px) {
+            .product-description h2 { font-size: 1.15rem; }
+            .product-description ul,
+            .product-description ol { padding-left: 1.25rem; }
+        }
+    </style>
+    <style>
         .main-image {
             transition: opacity 0.3s ease, transform 0.3s ease;
         }
@@ -570,6 +706,19 @@
 @endsection
 
 @section('js')
+    <script>
+        // ViewContent : consultation réelle d'une fiche, données du produit.
+        window.paradisTrack && window.paradisTrack('ViewContent', {
+            content_ids: [@json((string) ($product->sku ?: $product->id))],
+            content_name: @json($product->name),
+            content_type: 'product',
+            value: {{ (float) $product->price }},
+            currency: @json($config->currency ?: 'TND')
+        });
+    </script>
+
+    @include('front-office.partials.faq-js')
+
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <script>
         document.addEventListener('DOMContentLoaded', function() {
@@ -743,89 +892,112 @@
                     });
             });
 
-            // Quantity and Cart Management
+            // Quantité et variantes. Le nom updateQuantity est réservé au panier
+            // (layout) : le réutiliser ici cassait ses boutons + et −.
             const quantityDisplay = document.getElementById('quantity');
-            const productId = {{ $product->id }};
-            const productStock = {{ $product->stock }};
+            const addToCartButton = document.getElementById('addToCartButton');
 
-            function initializeQuantity() {
-                const cart = JSON.parse(localStorage.getItem('cart') || '[]');
-                const existingItem = cart.find(item => item.id === productId);
-                quantityDisplay.textContent = existingItem ? existingItem.quantity : 1;
+            const setQuantity = (quantity) => {
+                quantityDisplay.textContent = quantity;
+                addToCartButton.dataset.quantity = quantity;
+            };
+
+            window.changeQuantity = (change) => {
+                const stock = Number(addToCartButton.dataset.stock);
+                const quantity = Number(quantityDisplay.textContent) + change;
+
+                if (quantity < 1) {
+                    showNotification('La quantité minimale est 1.');
+                } else if (quantity > stock) {
+                    showNotification('Stock maximum atteint.', 'error');
+                } else {
+                    setQuantity(quantity);
+                }
+            };
+
+            const variantPicker = document.getElementById('variantPicker');
+
+            if (variantPicker) {
+                const variants = @json($variants);
+                const options = variantPicker.querySelectorAll('.variant-option');
+                const axes = ['type', 'size'].filter(axis => variants.some(v => v[axis]));
+                let selected = variants.find(v => v.id === {{ $selectedVariant['id'] ?? 'null' }});
+
+                variants.forEach(v => { new Image().src = v.image; });
+
+                // Tout clic aboutit sur une combinaison réelle : on garde l'autre
+                // axe s'il existe avec cette valeur, sinon on prend la meilleure.
+                // Le barré des options s'appuie sur ce même résultat.
+                const resolveVariant = (axis, value) => {
+                    const otherAxis = axes.find(a => a !== axis);
+                    const candidates = variants.filter(v => v[axis] === value);
+
+                    return candidates.find(v => otherAxis && v[otherAxis] === selected[otherAxis])
+                        ?? candidates.find(v => v.stock > 0)
+                        ?? candidates[0];
+                };
+
+                const selectVariant = (variant) => {
+                    selected = variant;
+
+                    options.forEach(option => {
+                        const axis = option.dataset.axis;
+                        const isSelected = variant[axis] === option.dataset.value;
+                        const inStock = resolveVariant(axis, option.dataset.value).stock > 0;
+
+                        option.setAttribute('aria-pressed', isSelected);
+                        option.classList.toggle('border-yellow-600', isSelected);
+                        option.classList.toggle('bg-yellow-50', isSelected);
+                        option.classList.toggle('text-yellow-800', isSelected);
+                        option.classList.toggle('border-gray-300', !isSelected);
+                        option.classList.toggle('text-gray-700', !isSelected);
+                        option.classList.toggle('line-through', !inStock);
+                        option.classList.toggle('opacity-50', !inStock);
+                    });
+
+                    axes.forEach(axis => {
+                        variantPicker.querySelector(`[data-axis-selected="${axis}"]`).textContent = variant[axis];
+                    });
+
+                    const available = variant.stock > 0;
+
+                    document.getElementById('productPrice').textContent = variant.price
+                        .toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+                    document.getElementById('stockInStock').classList.toggle('hidden', !available);
+                    document.getElementById('stockInStock').classList.toggle('flex', available);
+                    document.getElementById('stockOut').classList.toggle('hidden', available);
+                    document.getElementById('stockOut').classList.toggle('flex', !available);
+                    mainImage.src = variant.image;
+
+                    Object.assign(addToCartButton.dataset, {
+                        price: variant.price,
+                        image: variant.image,
+                        stock: variant.stock,
+                        variantId: variant.id,
+                        variantLabel: variant.label,
+                    });
+
+                    [addToCartButton, ...document.querySelectorAll('.js-quantity-button')].forEach(button => {
+                        button.disabled = !available;
+                        button.classList.toggle('opacity-50', !available);
+                        button.classList.toggle('cursor-not-allowed', !available);
+                    });
+
+                    setQuantity(1);
+                };
+
+                options.forEach(option => option.addEventListener('click', () => {
+                    selectVariant(resolveVariant(option.dataset.axis, option.dataset.value));
+                }));
+
+                // ?variant=ID : lien direct vers une option (données structurées).
+                const requested = Number(new URLSearchParams(location.search).get('variant'));
+                selectVariant(variants.find(v => v.id === requested) ?? selected);
             }
 
-            window.updateQuantity = (change, id, stock) => {
-                let currentQuantity = parseInt(quantityDisplay.textContent);
-                currentQuantity += change;
-
-                if (currentQuantity < 1) {
-                    currentQuantity = 1;
-                    showNotification('La quantité minimale est 1.');
-                } else if (currentQuantity > stock) {
-                    currentQuantity = stock;
-                    showNotification('Stock maximum atteint.', 'error');
-                }
-
-                quantityDisplay.textContent = currentQuantity;
-            };
-
-            window.addToCart = function(button) {
-                button.classList.add('loading');
-                button.disabled = true;
-                const spinner = button.querySelector('#addToCartSpinner');
-                spinner.classList.remove('hidden');
-
-                try {
-                    const product = {
-                        id: parseInt(button.dataset.id),
-                        name: button.dataset.name,
-                        price: parseFloat(button.dataset.price),
-                        image: button.dataset.image,
-                        stock: parseInt(button.dataset.stock),
-                        quantity: parseInt(quantityDisplay.textContent)
-                    };
-
-                    if (!product.id || !product.name || isNaN(product.price) || !product.image || isNaN(product
-                            .stock)) {
-                        throw new Error('Données du produit invalides.');
-                    }
-                    if (product.stock === 0) {
-                        throw new Error('Produit épuisé.');
-                    }
-
-                    let cart = JSON.parse(localStorage.getItem('cart') || '[]');
-                    cart = cart.filter(i => i.id && i.name && !isNaN(i.price) && i.image && !isNaN(i.stock));
-                    const existingItem = cart.find(item => item.id === product.id);
-
-                    if (existingItem) {
-                        existingItem.quantity = product.quantity;
-                        if (existingItem.quantity > product.stock) {
-                            existingItem.quantity = product.stock;
-                            quantityDisplay.textContent = product.stock;
-                            showNotification('Stock maximum atteint.', 'error');
-                        }
-                    } else {
-                        cart.push(product);
-                    }
-
-                    localStorage.setItem('cart', JSON.stringify(cart));
-                    updateCartCount();
-                    updateCartUI();
-                    openCartOffcanvas();
-                    showNotification(
-                        `${product.name} ajouté au panier avec ${product.quantity} unité${product.quantity > 1 ? 's' : ''}.`
-                    );
-                } catch (err) {
-                    showNotification(err.message, 'error');
-                    console.error(err);
-                } finally {
-                    button.classList.remove('loading');
-                    button.disabled = false;
-                    spinner.classList.add('hidden');
-                }
-            };
-
-            function showNotification(message, type = 'success') {
+        // addToCart est défini une seule fois dans front-office/layouts/app.blade.php
+        // (notification, ouverture du panier, compteur, évènement de tracking).
+function showNotification(message, type = 'success') {
                 const toast = document.createElement('div');
                 toast.classList.add('fixed', 'top-4', 'right-4', 'p-4', 'rounded-lg', 'shadow-lg', 'text-white',
                     'text-sm', 'transition-opacity', 'duration-300', 'z-50');
@@ -837,42 +1009,6 @@
                     setTimeout(() => toast.remove(), 300);
                 }, 3000);
             }
-
-            function updateCartCount() {
-                const cart = JSON.parse(localStorage.getItem('cart') || '[]');
-                const count = cart.reduce((sum, item) => sum + item.quantity, 0);
-                const cartCountElement = document.getElementById('cartCount');
-                if (cartCountElement) {
-                    cartCountElement.textContent = count;
-                }
-            }
-
-            function updateCartUI() {
-                const cart = JSON.parse(localStorage.getItem('cart') || '[]');
-                const cartItems = document.getElementById('cartItems');
-                if (cartItems) {
-                    if (cart.length === 0) {
-                        cartItems.innerHTML = '<p class="text-gray-600 text-center">Votre panier est vide.</p>';
-                    } else {
-                        cartItems.innerHTML = cart.map(item => `
-                            <div class="flex items-center p-2 border-b">
-                                <img src="${item.image}" alt="${item.name}" loading="lazy" class="w-12 h-12 object-cover rounded-md mr-3">
-                                <div class="flex-1">
-                                    <p class="text-sm font-medium">${item.name}</p>
-                                    <p class="text-xs text-gray-600">${item.price.toFixed(2)} DT x ${item.quantity}</p>
-                                </div>
-                                <button class="text-red-600" onclick="removeFromCart(${item.id})">
-                                    <i class="fas fa-trash"></i>
-                                </button>
-                            </div>
-                        `).join('');
-                    }
-                }
-            }
-
-            initializeQuantity();
-            updateCartCount();
-            updateCartUI();
         });
     </script>
 @endsection

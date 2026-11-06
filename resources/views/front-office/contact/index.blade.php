@@ -1,13 +1,13 @@
 @extends('front-office.layouts.app')
 
+
+@section('description', 'Besoin d’aide ou d’informations ? Contactez Paradis Déco – votre boutique de décoration intérieure en Tunisie. Notre équipe répond à vos questions sur les meubles tunisiens, tapis Kairouan, luminaires et accessoires maison.')
 {{-- ===== TITRE ===== --}}
 @section('title', 'Contact | Paradis Déco - Boutique Déco Tunisie | Décoration Intérieure Tunisie')
 
 {{-- ===== MÉTA ===== --}}
 @section('meta')
     {{-- SEO de base --}}
-    <meta name="description"
-          content="Besoin d’aide ou d’informations ? Contactez Paradis Déco – votre boutique de décoration intérieure en Tunisie. Notre équipe répond à vos questions sur les meubles tunisiens, tapis Kairouan, luminaires et accessoires maison." >
     <meta name="keywords"
           content="contact Paradis Déco, service client décoration Tunisie, questions boutique déco, meubles tunisiens, tapis Kairouan, luminaires Tunisie, accessoires maison Tunisie, boutique déco en ligne">
     <meta name="author" content="Paradis Déco">
@@ -18,14 +18,6 @@
     <link rel="alternate" href="{{ url()->current() }}" hreflang="x-default">
 
     {{-- Open Graph / Social --}}
-    <meta property="og:locale" content="fr_TN">
-    <meta property="og:type" content="website">
-    <meta property="og:title" content="Contact | Paradis Déco">
-    <meta property="og:description"
-          content="Contactez l’équipe Paradis Déco pour toute question sur nos meubles, tapis et accessoires made in Tunisia. Nous sommes là pour vous aider !">
-    <meta property="og:url" content="{{ url()->current() }}">
-    <meta property="og:site_name" content="{{ config('app.name') }}">
-
     {{-- Indexation --}}
     <meta name="robots" content="index, follow">
 @endsection

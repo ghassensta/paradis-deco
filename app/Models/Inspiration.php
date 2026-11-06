@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Support\RichText;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Str;
 
@@ -17,14 +18,12 @@ class Inspiration extends Model
         'description',
         'meta_title',
         'meta_description',
-        'gallery',
         'is_active',
     ];
 
     protected $casts = [
         'slug' => 'string',
         'is_active' => 'boolean',
-        'gallery' => 'array',
     ];
 
     /**
@@ -32,6 +31,26 @@ class Inspiration extends Model
      *
      * @return string
      */
+    /**
+     * Contenu re-nettoyé à l'affichage : couvre aussi les inspirations
+     * enregistrées avant la mise en place du filtre serveur.
+     */
+    public function getSafeDescriptionAttribute(): string
+    {
+        return RichText::toHtml($this->description);
+    }
+
+    /** Résumé toujours rendu en texte : il s'affiche dans des cartes. */
+    public function getSafeResumeAttribute(): string
+    {
+        return RichText::toText($this->resume);
+    }
+
+    public function getEditorDescriptionAttribute(): string
+    {
+        return $this->safe_description;
+    }
+
     public function getRouteKeyName()
     {
         return 'slug';

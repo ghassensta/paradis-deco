@@ -1,5 +1,7 @@
 @extends('front-office.layouts.app')
 
+
+@section('description', 'Paradis Déco : découvrez notre collection complète d\'inspirations pour sublimer votre intérieur en Tunisie.')
 @section('title', 'Toutes nos inspirations | Paradis Déco')
 
 @section('meta')
@@ -7,7 +9,6 @@
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1">
 
-    <meta name="description" content="Paradis Déco : découvrez notre collection complète d'inspirations pour sublimer votre intérieur en Tunisie.">
     <meta name="keywords" content="inspirations déco Tunisie, décoration intérieure, idées déco, artisanat tunisien, design intérieur, inspirations maison">
     <meta name="robots" content="index, follow, max-snippet:-1, max-image-preview:large, max-video-preview:-1">
     <meta name="theme-color" content="#FDD835">
@@ -74,7 +75,7 @@
                         <!-- Image Section -->
                         <div class="relative overflow-hidden aspect-square">
                             <a href="{{ route('preview-inspiration', $inspiration->slug) }}" class="block h-full">
-                                <img src="{{ $inspiration->image ? asset('storage/' . $inspiration->image) : asset('images/placeholder.jpg') }}"
+                                <img src="{{ $inspiration->image ? asset('storage/' . $inspiration->image) : asset('images/no-image.png') }}"
                                     alt="{{ $inspiration->title }}"
                                     class="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
                                     loading="lazy" />
@@ -92,7 +93,7 @@
                             <h3 class="text-base font-semibold text-gray-900 hover:text-primary transition-colors mb-1 line-clamp-2">
                                 <a href="{{ route('preview-inspiration', $inspiration->slug) }}">{{ $inspiration->title }}</a>
                             </h3>
-                            <p class="text-gray-500 text-xs sm:text-sm line-clamp-2 mb-2">{!! $inspiration->resume ?? 'Pas de résumé disponible.' !!}</p>
+                            <p class="text-gray-500 text-xs sm:text-sm line-clamp-2 mb-2">{{ $inspiration->safe_resume ?: 'Pas de résumé disponible.' }}</p>
                         </div>
                     </article>
                 @empty
@@ -103,7 +104,7 @@
                             </svg>
                             <h3 class="text-xl font-medium text-gray-700 mb-2">Aucune inspiration trouvée</h3>
                             <p class="text-gray-500 mb-6">Revenez bientôt pour découvrir de nouvelles inspirations.</p>
-                            <a href="{{ route('home') }}" class="inline-block px-6 py-2 bg-primary text-white rounded-lg hover:bg-primary-dark transition font-medium">
+                            <a href="{{ route('welcome') }}" class="inline-block px-6 py-2 bg-primary text-white rounded-lg hover:bg-primary-dark transition font-medium">
                                 Retour à l'accueil
                             </a>
                         </div>

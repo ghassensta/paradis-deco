@@ -1,20 +1,19 @@
 {{-- resources/views/front-office/checkout.blade.php --}}
 @extends('front-office.layouts.app')
 
+
+@section('description', 'Finalisez votre commande sur Paradis Déco Tunisie. Livraison rapide, paiement à la livraison, déco de qualité garantie.')
 @php
     /*  Paramètres livraison  */
     $shippingCost = (float) ($config->shipping_cost ?? 7); // 7 DT par défaut
-    $freeShippingLimit = (float) ($config->free_shipping_limit ?? 150);
+    // La colonne est « free_shipping_threshold » : lire « free_shipping_limit »
+    // renvoyait toujours la valeur de repli, quel que soit le réglage.
+    $freeShippingLimit = (float) ($config->free_shipping_threshold ?? 0);
 @endphp
 
 @section('title', 'Finaliser votre commande | Paradis Déco Tunisie')
 
 @section('meta')
-    <meta name="description"
-        content="Finalisez votre commande sur Paradis Déco Tunisie. Livraison rapide, paiement à la livraison, déco de qualité garantie.">
-    <meta property="og:title" content="Finaliser votre commande | Paradis Déco">
-    <meta property="og:description"
-        content="Achetez facilement vos articles de décoration. Paiement à la livraison partout en Tunisie.">
     <meta name="author" content="Paradis Déco">
     <meta name="publisher" content="Paradis Déco">
     <link rel="canonical" href="{{ url()->current() }}">
@@ -95,6 +94,16 @@
                             </svg>
                         </button>
                     </form>
+
+                    <div id="orderConfirmation" class="hidden text-center py-8" role="status">
+                        <i class="fas fa-check-circle text-green-600 text-5xl mb-4" aria-hidden="true"></i>
+                        <h2 class="text-2xl font-semibold text-gray-900 mb-2">Merci, votre commande est enregistrée</h2>
+                        <p class="text-gray-600 mb-1">Référence : <strong id="orderReference"></strong></p>
+                        <p class="text-gray-600 mb-6">Nous vous contacterons pour confirmer la livraison.</p>
+                        <a href="{{ route('allproduits') }}" class="inline-block px-6 py-2 bg-[#dfb54e] text-white rounded-lg hover:bg-[#cba640] transition font-medium">
+                            Continuer mes achats
+                        </a>
+                    </div>
                 </div>
 
 
@@ -197,6 +206,31 @@
             setTimeout(() => n.remove(), 3000);
         };
 
+        /* Une tentative de commande = une clé, tant que le panier ne change pas :
+           après une réponse perdue, le nouvel envoi retrouve la commande existante. */
+        const ATTEMPT_KEY = 'checkout_attempt';
+        const checkoutKeyFor = cart => {
+            const signature = JSON.stringify(cart.map(i => [i.id, i.variant_id || null, i.quantity]));
+            let attempt = null;
+
+            try {
+                attempt = JSON.parse(localStorage.getItem(ATTEMPT_KEY));
+            } catch (e) {
+                attempt = null;
+            }
+
+            if (!attempt || attempt.signature !== signature) {
+                // randomUUID n'existe qu'en contexte sécurisé (HTTPS ou localhost).
+                const key = crypto.randomUUID ? crypto.randomUUID()
+                    : `${Date.now()}-${Math.random().toString(36).slice(2)}`;
+
+                attempt = { key, signature };
+                localStorage.setItem(ATTEMPT_KEY, JSON.stringify(attempt));
+            }
+
+            return attempt.key;
+        };
+
         /* Mise à jour résumé */
         function updateOrderSummary() {
             const summary = document.getElementById('orderSummary');
@@ -222,13 +256,14 @@
                          class="w-12 h-12 rounded-lg object-cover flex-shrink-0">
                     <div class="ml-4 flex-1">
                         <h4 class="font-medium text-gray-800 text-sm">${i.name}</h4>
+                        ${i.variant_label ? `<p class="text-gray-500 text-xs">${i.variant_label}</p>` : ''}
                         <p class="text-gray-500 text-xs">${i.quantity} × ${i.price.toFixed(2)} DT</p>
                     </div>
                     <p class="text-gray-600 font-semibold text-sm">${line.toFixed(2)} DT</p>
                 </div>`;
             }).join('');
 
-            const shipping = subtotal >= FREE_SHIPPING_Amount ? 0 : SHIPPING_const;
+            const shipping = FREE_SHIPPING_Amount > 0 && subtotal >= FREE_SHIPPING_Amount ? 0 : SHIPPING_const;
             const total = subtotal + shipping;
 
             subT.textContent = `${subtotal.toFixed(2)} DT`;
@@ -243,9 +278,15 @@
             const form = document.getElementById('checkoutForm');
             const btn = document.getElementById('submitOrder');
             const spinner = document.getElementById('submitSpinner');
+            let submitting = false;
 
             form.addEventListener('submit', async e => {
                 e.preventDefault();
+
+                if (submitting) {
+                    return;
+                }
+
                 let invalid = false;
                 form.querySelectorAll('[required]').forEach(f => {
                     f.classList.toggle('border-red-500', !f.value.trim());
@@ -263,6 +304,8 @@
                     return;
                 }
 
+                submitting = true;
+                btn.disabled = true;
                 btn.classList.add('loading');
                 spinner.classList.remove('hidden');
                 try {
@@ -276,15 +319,56 @@
                         },
                         body: JSON.stringify({
                             ...payload,
-                            cart
+                            cart,
+                            checkout_key: checkoutKeyFor(cart)
                         })
                     });
                     if (res.ok) {
                         const data = await res.json();
+
+                        // Purchase émis uniquement après confirmation du serveur,
+                        // avec les montants réels du panier validé.
+                        //
+                        // Idempotence : la référence de commande renvoyée par le
+                        // serveur est mémorisée. Un rechargement, un retour
+                        // arrière ou un double envoi ne renvoie pas l'évènement.
+                        const reference = data.order_reference || null;
+                        const TRACKED_KEY = 'paradis_purchases';
+
+                        let tracked = [];
+                        try {
+                            tracked = JSON.parse(localStorage.getItem(TRACKED_KEY) || '[]');
+                        } catch (e) {
+                            tracked = [];
+                        }
+
+                        if (!reference || tracked.indexOf(reference) === -1) {
+                            window.paradisTrack('Purchase', {
+                                order_id: reference,
+                                content_ids: cart.map(i => String(i.id)),
+                                num_items: cart.reduce((n, i) => n + i.quantity, 0),
+                                value: Number(cart.reduce((t, i) => t + i.price * i.quantity, 0).toFixed(3)),
+                                currency: @json($config->currency ?: 'TND')
+                            });
+
+                            if (reference) {
+                                // On ne conserve que les dernières références :
+                                // inutile de faire grossir le stockage local.
+                                tracked.push(reference);
+                                localStorage.setItem(TRACKED_KEY, JSON.stringify(tracked.slice(-20)));
+                            }
+                        }
+
                         localStorage.removeItem(STORAGE_KEY);
+                        localStorage.removeItem(ATTEMPT_KEY);
                         updateOrderSummary();
-                        showNotification(data.message || 'Commande confirmée !');
-                        data.redirect && (window.location.href = data.redirect);
+                        document.querySelectorAll('[data-cart-count]').forEach(el => { el.textContent = 0; });
+
+                        // Le formulaire disparaît : le client voit que c'est fait
+                        // et n'a plus de bouton pour commander une seconde fois.
+                        form.classList.add('hidden');
+                        document.getElementById('orderReference').textContent = reference || '';
+                        document.getElementById('orderConfirmation').classList.remove('hidden');
                     } else if (res.status === 422) {
                         const errs = await res.json();
                         showNotification(Object.values(errs.errors).flat().join('\n'), 'error');
@@ -295,6 +379,8 @@
                     showNotification('Connexion impossible.', 'error');
                     console.log(err);
                 } finally {
+                    submitting = false;
+                    btn.disabled = false;
                     btn.classList.remove('loading');
                     spinner.classList.add('hidden');
                 }

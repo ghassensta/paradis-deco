@@ -1,12 +1,10 @@
 @extends('front-office.layouts.app')
 
+
+@section('description', $inspiration->meta_description ?? $inspiration->resume ?? 'Découvrez cette inspiration sur Paradis Déco.')
 @section('title', $inspiration->meta_title ?? $inspiration->title . ' | Paradis Déco')
 
 @section('meta')
-    <meta name="description" content="{{ $inspiration->meta_description ?? $inspiration->resume ?? 'Découvrez cette inspiration sur Paradis Déco.' }}">
-    <meta property="og:title" content="{{ $inspiration->meta_title ?? $inspiration->title }}">
-    <meta property="og:description" content="{{ $inspiration->meta_description ?? $inspiration->resume ?? 'Découvrez cette inspiration sur Paradis Déco.' }}">
-    <meta property="og:image" content="{{ $inspiration->image ? asset('storage/' . $inspiration->image) : asset('images/placeholder.jpg') }}">
     <meta name="author" content="Paradis Déco">
     <meta name="publisher" content="Paradis Déco">
 
@@ -16,6 +14,7 @@
 
     <meta name="robots" content="index, follow, max-snippet:-1, max-image-preview:large, max-video-preview:-1">
 @endsection
+@section('og_image', $inspiration->image ? asset('storage/' . $inspiration->image) : asset('images/default-og.jpg'))
 
 @section('css')
     <style>
@@ -98,7 +97,7 @@
                              loading="lazy">
                     </a>
                 @else
-                    <img src="{{ asset('images/placeholder.jpg') }}"
+                    <img src="{{ asset('images/no-image.png') }}"
                          alt="Image d'inspiration décoration"
                          class="w-full h-auto max-h-[580px] object-cover"
                          loading="lazy">
@@ -107,7 +106,7 @@
 
             <!-- Contenu principal (zone nettoyée) -->
             <div class="content prose prose-lg prose-headings:text-gray-900 prose-a:text-primary max-w-none mb-16">
-                {!! $inspiration->description ?? '<p class="text-gray-500 italic">Aucune description détaillée disponible pour le moment.</p>' !!}
+                {!! $inspiration->safe_description ?: '<p class="text-gray-500 italic">Aucune description détaillée disponible pour le moment.</p>' !!}
             </div>
 
             <!-- Galerie -->
@@ -141,7 +140,7 @@
                             <a href="{{ route('preview-inspiration', $related->slug) }}"
                                class="group block rounded-2xl overflow-hidden shadow-lg hover:shadow-2xl transition-all duration-300 bg-white">
                                 <div class="relative overflow-hidden aspect-[4/3]">
-                                    <img src="{{ $related->image ? asset('storage/' . $related->image) : asset('images/placeholder.jpg') }}"
+                                    <img src="{{ $related->image ? asset('storage/' . $related->image) : asset('images/no-image.png') }}"
                                          alt="{{ $related->title }}"
                                          class="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
                                          loading="lazy">

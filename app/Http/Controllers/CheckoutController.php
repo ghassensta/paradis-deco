@@ -7,8 +7,11 @@ use App\Models\Client;
 use App\Models\Configuration;
 use App\Models\Order;
 use App\Models\OrderItem;
+use App\Models\Product;
+use Illuminate\Database\UniqueConstraintViolationException;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Validation\ValidationException;
 use Mail;
 
 class CheckoutController extends Controller
@@ -44,10 +47,20 @@ class CheckoutController extends Controller
             'cart.*.name' => 'required|string',
             'cart.*.price' => 'required|numeric|min:0',
             'cart.*.quantity' => 'required|integer|min:1',
+            'cart.*.variant_id' => 'nullable|integer',
+            'checkout_key' => 'nullable|string|max:64',
         ]);
 
-        $cart = $validated['cart'];
-        unset($validated['cart']);   // reste = infos client
+        /* Tentative déjà aboutie (double clic, réponse perdue, second onglet) :
+           on rend la commande existante, avant tout contrôle de stock. */
+        $checkoutKey = $validated['checkout_key'] ?? null;
+
+        if ($existing = $this->orderForKey($checkoutKey)) {
+            return $this->orderConfirmed($existing);
+        }
+
+        $cart = $this->resolveCart($validated['cart']);
+        unset($validated['cart'], $validated['checkout_key']);   // reste = infos client
 
         /* ──────────────── 2. Transaction BDD ──────────────── */
         DB::beginTransaction();
@@ -71,8 +84,9 @@ class CheckoutController extends Controller
             $shippingCostFixed = (float) ($config->shipping_cost ?? 0);
             $freeShippingThreshold = (float) ($config->free_shipping_threshold ?? 0);
 
-            /* 2.4 Frais de port */
-            $shippingCost = $subTotal >= $freeShippingThreshold
+            /* 2.4 Frais de port — un seuil à 0 signifie « pas de livraison
+               offerte », surtout pas « offerte dès le premier dinar ». */
+            $shippingCost = $freeShippingThreshold > 0 && $subTotal >= $freeShippingThreshold
                 ? 0
                 : $shippingCostFixed;
 
@@ -87,6 +101,7 @@ class CheckoutController extends Controller
             /* 2.7 Création de la commande */
             $order = Order::create([
                 'numero_commande' => 'CMD-' . strtoupper(uniqid()),
+                'checkout_key' => $checkoutKey,
                 'client_id' => $client->id,
                 'statut_id' => 4,            // « en cours »
                 'subtotal_ht' => $subTotal,
@@ -103,6 +118,8 @@ class CheckoutController extends Controller
                 OrderItem::create([
                     'order_id' => $order->id,
                     'product_id' => $item['id'],
+                    'product_variant_id' => $item['variant_id'],
+                    'variant_label' => $item['variant_label'],
                     'quantity' => $item['quantity'],
                     'unit_price' => $item['price'],
                     'subtotal' => $item['price'] * $item['quantity'],
@@ -110,15 +127,24 @@ class CheckoutController extends Controller
             }
 
             DB::commit();
-            if (isset($validated['email']) && $validated['email'] !== null && $validated['email'] !== '') {
-                Mail::to($validated['email'])->queue(new CheckoutConfirmMail($order));
+
+            $this->sendConfirmation($order, $validated['email'] ?? null);
+
+            return $this->orderConfirmed($order);
+
+        } catch (UniqueConstraintViolationException $e) {
+            DB::rollBack();
+
+            // Envoi simultané : l'autre requête a créé la commande juste avant.
+            if ($existing = $this->orderForKey($checkoutKey)) {
+                return $this->orderConfirmed($existing);
             }
 
-            // À l’admin
-            Mail::to(env('EMAIL_ADMIN'))
-                ->queue(new CheckoutConfirmMail($order));
+            report($e);
 
-            return response()->json(['message' => 'Commande enregistrée.']);
+            return response()->json([
+                'message' => 'Erreur lors de l’enregistrement de la commande.',
+            ], 500);
 
         } catch (\Throwable $e) {
             DB::rollBack();
@@ -128,6 +154,95 @@ class CheckoutController extends Controller
             ], 500);
         }
     }
+
+    private function orderForKey(?string $checkoutKey): ?Order
+    {
+        return $checkoutKey ? Order::withTrashed()->firstWhere('checkout_key', $checkoutKey) : null;
+    }
+
+    private function orderConfirmed(Order $order)
+    {
+        return response()->json([
+            'message' => 'Commande enregistrée.',
+            // Renvoyé pour que le front puisse identifier la commande et
+            // n'envoyer l'évènement Purchase qu'une seule fois.
+            'order_reference' => $order->numero_commande,
+        ]);
+    }
+
+    /**
+     * La commande est déjà validée : une panne d'e-mail ne doit pas renvoyer
+     * une erreur au client, qui recommanderait alors une seconde fois.
+     */
+    private function sendConfirmation(Order $order, ?string $email): void
+    {
+        try {
+            if (filled($email)) {
+                Mail::to($email)->queue(new CheckoutConfirmMail($order));
+            }
+
+            // À l’admin. env() renvoyait null (clé absente du .env, et vidée
+            // par config:cache) : le job échouait silencieusement en file.
+            if ($adminRecipient = config('mail.admin_to')) {
+                Mail::to($adminRecipient)->queue(new CheckoutConfirmMail($order));
+            }
+        } catch (\Throwable $e) {
+            report($e);
+        }
+    }
+
+    /**
+     * Le panier vit dans le localStorage du client : seuls l'article et la
+     * quantité en sont repris, le prix et la variante viennent de la base.
+     */
+    private function resolveCart(array $cart): array
+    {
+        $products = Product::with('activeVariants')
+            ->whereIn('id', array_column($cart, 'id'))
+            ->get()
+            ->keyBy('id');
+
+        return collect($cart)->map(function (array $item, int $index) use ($products) {
+            $product = $products->get($item['id']);
+
+            if (! $product) {
+                throw ValidationException::withMessages([
+                    "cart.$index.id" => "« {$item['name']} » n'est plus disponible.",
+                ]);
+            }
+
+            if (! $product->has_variants) {
+                return [
+                    ...$item,
+                    'price' => (float) $product->price,
+                    'variant_id' => null,
+                    'variant_label' => null,
+                ];
+            }
+
+            $variant = $product->activeVariants->firstWhere('id', (int) ($item['variant_id'] ?? 0));
+
+            if (! $variant) {
+                throw ValidationException::withMessages([
+                    "cart.$index.variant_id" => "Veuillez choisir une option pour « {$product->name} ».",
+                ]);
+            }
+
+            if ($item['quantity'] > $variant->stock) {
+                throw ValidationException::withMessages([
+                    "cart.$index.quantity" => "Stock insuffisant pour « {$product->name} » ({$variant->label}).",
+                ]);
+            }
+
+            return [
+                ...$item,
+                'price' => (float) $variant->price,
+                'variant_id' => $variant->id,
+                'variant_label' => $variant->label,
+            ];
+        })->all();
+    }
+
     /**
      * Display the specified resource.
      */

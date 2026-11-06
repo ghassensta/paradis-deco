@@ -1,8 +1,9 @@
 @extends('front-office.layouts.app')
+
+@section('description', 'Mentions légales de Paradis Déco Tunisie : informations sur l\'éditeur, hébergement, protection des données et conditions d\'utilisation du site.')
 @section('title', 'Mentions Légales - Paradis Déco Tunisie | Informations Légales')
 
 @section('meta')
-    <meta name="description" content="Mentions légales de Paradis Déco Tunisie : informations sur l'éditeur, hébergement, protection des données et conditions d'utilisation du site.">
     <meta name="keywords" content="mentions légales Tunisie, informations légales boutique en ligne, éditeur site e-commerce Tunisie, hébergement site web Tunisie">
     <link rel="canonical" href="{{ url()->current() }}">
 
