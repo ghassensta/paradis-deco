@@ -1,23 +1,34 @@
 @extends('front-office.layouts.app')
 
+
+@section('description', 'Paradis Déco : découvrez notre collection complète de meubles, luminaires, tapis et accessoires pour sublimer votre intérieur en Tunisie.')
 {{-- ============  MÉTADONNÉES – PAGE LISTE PRODUITS  ============ --}}
 @section('title', 'Tous nos produits | Paradis Déco')
+
+@php
+    // Même stratégie que les pages catégorie : la page 1 est la landing SEO,
+    // les suivantes sont en noindex,follow avec un canonical vers elles-mêmes.
+    $currentPage = $products->currentPage();
+    $isFirstPage = $currentPage === 1;
+    $canonical = $isFirstPage
+        ? route('allproduits')
+        : route('allproduits') . '?page=' . $currentPage;
+@endphp
 
 @section('meta')
     <meta charset="utf-8">
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1">
 
-    <meta name="description" content="Paradis Déco : découvrez notre collection complète de meubles, luminaires, tapis et accessoires pour sublimer votre intérieur en Tunisie.">
     <meta name="keywords" content="boutique déco en ligne Tunisie, décoration intérieure, meubles tunisiens, luminaires, tapis artisanaux, accessoires maison, artisanat tunisien, ameublement moderne, cadeaux maison">
-    <meta name="robots" content="index, follow, max-snippet:-1, max-image-preview:large, max-video-preview:-1">
+    <meta name="robots" content="{{ $isFirstPage ? 'index,follow' : 'noindex,follow' }},max-snippet:-1,max-image-preview:large">
     <meta name="theme-color" content="#FDD835">
     <meta name="author" content="Paradis Déco">
     <meta name="publisher" content="Paradis Déco">
 
-    <link rel="canonical" href="{{ url()->current() }}">
-    <link rel="alternate" href="{{ url()->current() }}" hreflang="fr-tn">
-    <link rel="alternate" href="{{ url()->current() }}" hreflang="x-default">
+    <link rel="canonical" href="{{ $canonical }}">
+    <link rel="alternate" href="{{ route('allproduits') }}" hreflang="fr-tn">
+    <link rel="alternate" href="{{ route('allproduits') }}" hreflang="x-default">
 
 
 @endsection
@@ -89,7 +100,7 @@
                                     <ul class="space-y-2">
                                         @foreach($categories as $category)
                                             <li>
-                                                <a href="{{ route('categorie.produits', $category->slug) }}"
+                                                <a href="{{ $category->url }}"
                                                    class="flex items-center justify-between py-3 px-4 -mx-4 rounded-lg hover:bg-gray-50 transition-colors"
                                                    @click="mobileFiltersOpen = false">
                                                     <span class="text-gray-700">{{ $category->name }}</span>
@@ -120,7 +131,7 @@
                             <ul class="space-y-2">
                                 @foreach($categories as $category)
                                     <li>
-                                        <a href="{{ route('categorie.produits', $category->slug) }}" class="flex items-center justify-between py-2 px-3 rounded-lg hover:bg-gray-50 transition-colors">
+                                        <a href="{{ $category->url }}" class="flex items-center justify-between py-2 px-3 rounded-lg hover:bg-gray-50 transition-colors">
                                             <span class="text-gray-700">{{ $category->name }}</span>
                                             <span class="text-xs bg-gray-100 text-gray-500 px-2 py-1 rounded-full">{{ $category->products_count }}</span>
                                         </a>
@@ -189,13 +200,20 @@
 
                                     <div class="flex justify-between items-center">
                                         <p class="text-black font-bold text-lg">
+                                            @if ($product->has_variants)<span class="block text-xs font-normal text-gray-500">À partir de</span>@endif
                                             {{ number_format($product->price, 2) }} DT
                                         </p>
 
+                                        @if ($product->has_variants)
+                                            <a href="{{ route('preview-article', $product->slug) }}" aria-label="Choisir une option pour {{ $product->name }}"
+                                               class="flex items-center justify-center bg-black hover:bg-gray-800 text-white p-2 rounded-lg transition-all duration-300">
+                                                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
+                                            </a>
+                                        @else
                                         <button aria-label="Ajouter {{ $product->name }} au panier"
                                                 data-id="{{ $product->id }}"
                                                 data-name="{{ $product->name }}"
-                                                data-price="{{ number_format($product->price, 2) }}"
+                                                data-price="{{ $product->price }}"
                                                 data-image="{{ asset('storage/' . ($product->image_avant ?? ($product->images[0] ?? ''))) }}"
                                                 data-stock="{{ $product->stock }}"
                                                 class="cursor-pointer flex items-center justify-center gap-1 bg-black hover:bg-gray-800 text-white p-2 rounded-lg transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-primary focus:ring-opacity-50 hover:shadow-md"
@@ -205,6 +223,7 @@
                                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
                                             </svg>
                                         </button>
+                                        @endif
                                     </div>
                                 </div>
                             </article>
@@ -289,40 +308,7 @@
 @section('js')
     <script src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js" defer></script>
     <script>
-        function addToCart(button) {
-            const product = {
-                id: button.dataset.id,
-                name: button.dataset.name,
-                price: button.dataset.price,
-                image: button.dataset.image,
-                quantity: 1
-            };
-
-            let cart = JSON.parse(localStorage.getItem('cart')) || [];
-            const existingItem = cart.find(item => item.id === product.id);
-
-            if (existingItem) {
-                existingItem.quantity += 1;
-            } else {
-                cart.push(product);
-            }
-
-            localStorage.setItem('cart', JSON.stringify(cart));
-
-            const notification = document.createElement('div');
-            notification.className = 'fixed bottom-4 right-4 bg-green-500 text-white px-4 py-3 rounded-lg shadow-lg flex items-center gap-2 z-50 animate-fade-in-up';
-            notification.innerHTML = `
-                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
-                    <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd" />
-                </svg>
-                <span>${product.name} ajouté au panier</span>
-            `;
-            document.body.appendChild(notification);
-
-            setTimeout(() => {
-                notification.classList.add('opacity-0', 'transition-opacity', 'duration-300');
-                setTimeout(() => notification.remove(), 300);
-            }, 3000);
-        }
-    </script>
+        // addToCart est défini une seule fois dans front-office/layouts/app.blade.php
+        // (notification, ouverture du panier, compteur, évènement de tracking).
+</script>
 @endsection

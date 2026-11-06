@@ -167,7 +167,7 @@
                         $ligneHT = $item->unit_price * $item->quantity;
                     @endphp
                     <tr>
-                        <td>{{ $item->product->name }}</td>
+                        <td>{{ $item->product->name }}@if ($item->variant_label) — {{ $item->variant_label }}@endif</td>
                         <td>{{ number_format($item->unit_price, 2, ',', ' ') }} {{ $data['currency'] }}</td>
                         <td>{{ $item->quantity }}</td>
                         <td>{{ $data['tax_rate'] }} %</td>

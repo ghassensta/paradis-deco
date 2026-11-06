@@ -2,6 +2,8 @@
 
 namespace App\Http\Controllers;
 
+use Illuminate\Database\Eloquent\ModelNotFoundException;
+
 use App\Models\Order;
 use Illuminate\Http\Request;
 use App\Models\Commande;
@@ -44,6 +46,9 @@ class PdfController extends Controller
         // Generate and stream the PDF
         return Pdf::loadView('pdf.facture', ['data' => $data])
             ->stream("facture_{$commande->numero_commande}.pdf");
+    } catch (ModelNotFoundException $e) {
+        // Commande inexistante : 404, pas une erreur serveur.
+        abort(404);
     } catch (\Exception $e) {
         // Log the error and return a user-friendly response
         \Log::error('PDF generation failed: ' . $e->getMessage());

@@ -115,4 +115,27 @@ return [
         'name' => env('MAIL_FROM_NAME', 'Example'),
     ],
 
+    /*
+    |--------------------------------------------------------------------------
+    | Destinataire du formulaire de contact
+    |--------------------------------------------------------------------------
+    */
+
+    // ?: et non un défaut env() : une clé présente mais VIDE doit aussi
+    // retomber sur l'expéditeur, sinon Mail::to('') échoue sans destinataire.
+    'contact_to' => env('MAIL_CONTACT_TO') ?: env('MAIL_FROM_ADDRESS', 'hello@example.com'),
+
+    /*
+    |--------------------------------------------------------------------------
+    | Destinataire des notifications de commande
+    |--------------------------------------------------------------------------
+    | Lu via config() et non env() : après php artisan config:cache, env()
+    | renvoie null hors des fichiers de configuration.
+    */
+
+    'admin_to' => env('MAIL_ADMIN_TO')
+        ?: env('EMAIL_ADMIN')
+        ?: env('MAIL_CONTACT_TO')
+        ?: env('MAIL_FROM_ADDRESS', 'hello@example.com'),
+
 ];

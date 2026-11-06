@@ -1,5 +1,16 @@
 @extends('admin.layouts.app')
 
+@section('css')
+    {{-- Quill : chargé uniquement sur l'écran de gestion des catégories --}}
+    <link rel="stylesheet" href="{{ asset('assets/vendor/libs/quill/typography.css') }}" />
+    <link rel="stylesheet" href="{{ asset('assets/vendor/libs/quill/editor.css') }}" />
+    <style>
+        .js-cat-quill { min-height: 200px; }
+        .js-cat-quill .ql-editor { min-height: 200px; font-size: .95rem; }
+        .ql-toolbar.ql-snow { flex-wrap: wrap; }
+    </style>
+@endsection
+
 @section('content')
 <div class="container-xxl flex-grow-1 container-p-y">
     <h4 class="mb-4">Liste des Categories</h4>
@@ -7,12 +18,32 @@
         <div class="col-12">
             <div class="card">
                 <div class="card-datatable table-responsive">
+                    <div class="d-flex flex-wrap gap-3 p-3 border-bottom">
+                        <div>
+                            <label class="form-label mb-1" for="filterCategoryType">Type</label>
+                            <select id="filterCategoryType" class="form-select form-select-sm">
+                                <option value="">Toutes</option>
+                                <option value="root">Catégories principales</option>
+                                <option value="child">Sous-catégories</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="form-label mb-1" for="filterCategoryStatus">Statut</label>
+                            <select id="filterCategoryStatus" class="form-select form-select-sm">
+                                <option value="">Tous</option>
+                                <option value="1">Actives</option>
+                                <option value="0">Inactives</option>
+                            </select>
+                        </div>
+                    </div>
                     <table class="datatables-categories table border-top">
                         <thead>
                             <tr>
                                 <th></th>
                                 <th>Image</th>
                                 <th>Nom Categorie</th>
+                                <th>Parent</th>
+                                <th>Ordre</th>
                                 <th>Status</th>
                                 <th>Actions</th>
                             </tr>
@@ -63,6 +94,55 @@
                         </select>
                     </div>
 
+
+                    <div class="col-12 col-md-6">
+                        <label class="form-label" for="modalAddCategoryType">Type</label>
+                        <select id="modalAddCategoryType" class="form-select category-type-select" data-target="#modalAddCategoryParent">
+                            <option value="root">Catégorie principale</option>
+                            <option value="child">Sous-catégorie</option>
+                        </select>
+                    </div>
+
+                    <div class="col-12 col-md-6 parent-wrapper" style="display: none;">
+                        <label class="form-label" for="modalAddCategoryParent">Catégorie parent</label>
+                        <select id="modalAddCategoryParent" name="parent_id" class="form-select">
+                            <option value="">— Choisir —</option>
+                            @foreach ($parents as $parent)
+                                <option value="{{ $parent->id }}">{{ $parent->name }}</option>
+                            @endforeach
+                        </select>
+                    </div>
+
+                    <div class="col-12 col-md-6">
+                        <label class="form-label" for="modalAddCategorySortOrder">Ordre d'affichage</label>
+                        <input type="number" id="modalAddCategorySortOrder" name="sort_order" min="0" value="0" class="form-control">
+                    </div>
+
+                    <div class="col-12">
+                        <label class="form-label" for="modalAddCategoryShortDescription">Description courte</label>
+                        <textarea id="modalAddCategoryShortDescription" name="description_courte" rows="2"
+                                  maxlength="600" class="form-control js-cat-short"
+                                  placeholder="Résumé de la catégorie, affiché en tête de page."></textarea>
+                        <div class="d-flex justify-content-between align-items-start mt-1">
+                            <small class="text-muted">Résumé court affiché en tête de page. 150 à 300 caractères recommandés.</small>
+                            <small class="text-muted text-nowrap ms-3"><span class="js-cat-short-count">0</span>/600</small>
+                        </div>
+                    </div>
+
+                    <div class="col-12">
+                        <label class="form-label" for="modalAddCategoryEditor">Description longue</label>
+                        <div id="modalAddCategoryEditor" class="js-cat-quill bg-white"></div>
+                        <textarea name="description" id="modalAddCategoryDescription" hidden aria-hidden="true"></textarea>
+                        <small class="text-muted d-block mt-1">
+                            Rédigez un contenu unique et utile présentant la catégorie, les types de produits
+                            disponibles, les critères de choix et les informations réellement pertinentes.
+                            Évitez le bourrage de mots-clés et <strong>n'inventez aucune information</strong>.
+                        </small>
+                    </div>
+
+                    <div class="col-12">
+                        @include('admin.partials.faq-editor', ['faqs' => collect(), 'uid' => 'cat-add-faq'])
+                    </div>
                     {{-- Meta fields --}}
                     <div class="col-12 col-md-6">
                         <label class="form-label" for="modalAddMetaTitle">Meta title</label>
@@ -147,6 +227,55 @@
                         </select>
                     </div>
 
+
+                    <div class="col-12 col-md-6">
+                        <label class="form-label" for="modalEditCategoryType">Type</label>
+                        <select id="modalEditCategoryType" class="form-select category-type-select" data-target="#modalEditCategoryParent">
+                            <option value="root">Catégorie principale</option>
+                            <option value="child">Sous-catégorie</option>
+                        </select>
+                    </div>
+
+                    <div class="col-12 col-md-6 parent-wrapper" style="display: none;">
+                        <label class="form-label" for="modalEditCategoryParent">Catégorie parent</label>
+                        <select id="modalEditCategoryParent" name="parent_id" class="form-select">
+                            <option value="">— Choisir —</option>
+                            @foreach ($parents as $parent)
+                                <option value="{{ $parent->id }}">{{ $parent->name }}</option>
+                            @endforeach
+                        </select>
+                    </div>
+
+                    <div class="col-12 col-md-6">
+                        <label class="form-label" for="modalEditCategorySortOrder">Ordre d'affichage</label>
+                        <input type="number" id="modalEditCategorySortOrder" name="sort_order" min="0" value="0" class="form-control">
+                    </div>
+
+                    <div class="col-12">
+                        <label class="form-label" for="modalEditCategoryShortDescription">Description courte</label>
+                        <textarea id="modalEditCategoryShortDescription" name="description_courte" rows="2"
+                                  maxlength="600" class="form-control js-cat-short"
+                                  placeholder="Résumé de la catégorie, affiché en tête de page."></textarea>
+                        <div class="d-flex justify-content-between align-items-start mt-1">
+                            <small class="text-muted">Résumé court affiché en tête de page. 150 à 300 caractères recommandés.</small>
+                            <small class="text-muted text-nowrap ms-3"><span class="js-cat-short-count">0</span>/600</small>
+                        </div>
+                    </div>
+
+                    <div class="col-12">
+                        <label class="form-label" for="modalEditCategoryEditor">Description longue</label>
+                        <div id="modalEditCategoryEditor" class="js-cat-quill bg-white"></div>
+                        <textarea name="description" id="modalEditCategoryDescription" hidden aria-hidden="true"></textarea>
+                        <small class="text-muted d-block mt-1">
+                            Rédigez un contenu unique et utile présentant la catégorie, les types de produits
+                            disponibles, les critères de choix et les informations réellement pertinentes.
+                            Évitez le bourrage de mots-clés et <strong>n'inventez aucune information</strong>.
+                        </small>
+                    </div>
+
+                    <div class="col-12">
+                        @include('admin.partials.faq-editor', ['faqs' => collect(), 'uid' => 'cat-edit-faq'])
+                    </div>
                     {{-- Meta fields --}}
                     <div class="col-12 col-md-6">
                         <label class="form-label" for="modalEditMetaTitle">Meta title</label>
@@ -193,6 +322,88 @@
 @endsection
 
 @section('js')
+    <script src="{{ asset('assets/vendor/libs/quill/quill.js') }}"></script>
+    @include('admin.partials.faq-editor-js')
+    <script>
+        // Une instance Quill par modale, avec la même toolbar que les produits.
+        window.categoryEditors = {};
+
+        document.querySelectorAll('.js-cat-quill').forEach(function (container) {
+            if (typeof Quill === 'undefined') {
+                return;
+            }
+
+            var field = container.parentElement.querySelector('textarea[name="description"]');
+
+            var quill = new Quill(container, {
+                theme: 'snow',
+                placeholder: 'Présentez la catégorie : types de produits, critères de choix…',
+                modules: {
+                    toolbar: [
+                        ['bold', 'italic', 'underline', 'strike'],
+                        [{ header: 2 }, { header: 3 }],
+                        [{ list: 'ordered' }, { list: 'bullet' }],
+                        ['link'],
+                        ['clean']
+                    ]
+                },
+                formats: ['bold', 'italic', 'underline', 'strike', 'header', 'list', 'link']
+            });
+
+            // Synchronisation continue : les modales postent via FormData.
+            var sync = function () {
+                field.value = quill.getText().trim() === '' ? '' : quill.root.innerHTML;
+            };
+
+            quill.on('text-change', sync);
+            sync();
+
+            window.categoryEditors[container.id] = { quill: quill, field: field, sync: sync };
+        });
+
+        // Compteur de la description courte
+        document.querySelectorAll('.js-cat-short').forEach(function (field) {
+            var counter = field.closest('.col-12').querySelector('.js-cat-short-count');
+
+            var sync = function () {
+                counter.textContent = field.value.length;
+                counter.parentElement.classList.toggle('text-success', field.value.length >= 150 && field.value.length <= 300);
+            };
+
+            field.addEventListener('input', sync);
+            sync();
+        });
+
+        function setCategoryEditorHtml(editorId, html) {
+            var editor = window.categoryEditors[editorId];
+
+            if (!editor) {
+                return;
+            }
+
+            // clipboard.dangerouslyPasteHTML applique les formats autorisés :
+            // ce qui sort de la liste blanche de Quill est ignoré.
+            editor.quill.setText('');
+
+            if (html) {
+                editor.quill.clipboard.dangerouslyPasteHTML(html);
+            }
+
+            editor.sync();
+        }
+
+        function fillCategoryFaqs(sectionId, faqs) {
+            var section = document.getElementById(sectionId);
+
+            if (!section || !section.faqEditor) {
+                return;
+            }
+
+            section.faqEditor.reset();
+            (faqs || []).forEach(function (faq) { section.faqEditor.add(faq); });
+        }
+    </script>
+
 <script src="{{ asset('assets/vendor/libs/datatables-bs5/datatables-bootstrap5.js') }}"></script>
 <script src="{{ asset('assets/vendor/libs/select2/select2.js') }}"></script>
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
@@ -212,11 +423,19 @@ $(function() {
         dtCategory = dtCategoryTable.DataTable({
             processing: true,
             serverSide: true,
-            ajax: "{{ route('category.get') }}",
+            ajax: {
+                url: "{{ route('category.get') }}",
+                data: function(d) {
+                    d.type = $('#filterCategoryType').val();
+                    d.status = $('#filterCategoryStatus').val();
+                }
+            },
             columns: [
                 { data: '' },
                 { data: 'image' },
                 { data: 'name' },
+                { data: 'parent' },
+                { data: 'sort_order' },
                 { data: 'is_active' },
                 { data: '' }
             ],
@@ -244,6 +463,19 @@ $(function() {
                 },
                 {
                     targets: 3,
+                    render: function(data) {
+                        return data;
+                    }
+                },
+                {
+                    targets: 4,
+                    className: 'text-center',
+                    render: function(data) {
+                        return data;
+                    }
+                },
+                {
+                    targets: 5,
                     render: function(data) {
                         return data;
                     }
@@ -300,6 +532,7 @@ $(function() {
                     action: function() {
                         // Reset form + erreurs
                         $('#addCategoryModalForm')[0].reset();
+                        fillCategoryFaqs('cat-add-faq-section', []);
                         $('#addValidationErrors').hide().empty();
                         // Réinitialiser select2 du modal add
                         $('#modalAddCategoryStatus').val('1').trigger('change');
@@ -383,6 +616,32 @@ $(function() {
         });
     });
 
+    // Bascule Catégorie principale / Sous-catégorie
+    function syncParentField($select) {
+        var isChild = $select.val() === 'child';
+        var $wrapper = $select.closest('.row, form').find($select.data('target')).closest('.parent-wrapper');
+        $wrapper.toggle(isChild);
+
+        if (!isChild) {
+            $($select.data('target')).val('');
+        }
+    }
+
+    $(document).on('change', '.category-type-select', function() {
+        syncParentField($(this));
+    });
+
+    $('.category-type-select').each(function() {
+        syncParentField($(this));
+    });
+
+    // Filtres du tableau
+    $('#filterCategoryType, #filterCategoryStatus').on('change', function() {
+        if (dtCategory) {
+            dtCategory.ajax.reload();
+        }
+    });
+
     // Edit Category - Populate Modal
     dtCategoryTable.on('click', '.edit-record', function() {
         var id = $(this).data('id');
@@ -394,7 +653,20 @@ $(function() {
             success: function(data) {
                 $('#editCategoryModalId').val(data.id);
                 $('#modalEditCategoryName').val(data.name);
-                $('#modalEditCategoryStatus').val(data.is_active).trigger('change');
+                // is_active arrive en booléen : .val(true) ne sélectionnait aucune option
+                // et le champ requis, masqué par Select2, bloquait l'envoi sans message.
+                $('#modalEditCategoryStatus').val(data.is_active ? '1' : '0').trigger('change');
+
+                // description courte, description longue (Quill) et FAQ
+                $('#modalEditCategoryShortDescription').val(data.description_courte || '').trigger('input');
+                setCategoryEditorHtml('modalEditCategoryEditor', data.description || '');
+                fillCategoryFaqs('cat-edit-faq-section', data.faqs);
+
+                // hiérarchie
+                $('#modalEditCategorySortOrder').val(data.sort_order || 0);
+                $('#modalEditCategoryDescription').val(data.description || '');
+                $('#modalEditCategoryType').val(data.parent_id ? 'child' : 'root').trigger('change');
+                $('#modalEditCategoryParent').val(data.parent_id || '');
 
                 // meta fields
                 $('#modalEditMetaTitle').val(data.meta_title || '');

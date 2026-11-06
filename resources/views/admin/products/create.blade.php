@@ -92,6 +92,17 @@
                                             {{ in_array($category->id, $selected) ? 'selected' : '' }}>
                                             {{ $category->name }}
                                         </option>
+
+                                        @if ($category->activeChildren->isNotEmpty())
+                                            <optgroup label="&nbsp;&nbsp;↳ {{ $category->name }}">
+                                                @foreach ($category->activeChildren as $child)
+                                                    <option value="{{ $child->id }}"
+                                                        {{ in_array($child->id, $selected) ? 'selected' : '' }}>
+                                                        {{ $child->name }}
+                                                    </option>
+                                                @endforeach
+                                            </optgroup>
+                                        @endif
                                     @endforeach
                                 </select>
                                 <div class="invalid-feedback">
@@ -120,6 +131,22 @@
                             @enderror
                         </div>
 
+
+                        <!-- SKU -->
+                        <div class="mb-3 col-md-6">
+                            <label class="form-label fw-bold" for="sku">Référence (SKU)</label>
+                            <div class="input-group input-group-merge">
+                                <span class="input-group-text"><i class="ti ti-barcode"></i></span>
+                                <input type="text" name="sku" class="form-control" id="sku"
+                                    value="{{ old('sku', isset($product) ? $product->sku : '') }}"
+                                    placeholder="Référence interne, ex. BOUGIE001">
+                            </div>
+                            <small class="text-muted">Facultatif, mais doit rester unique s'il est renseigné.</small>
+                            @error('sku')
+                                <div class="text-danger">{{ $message }}</div>
+                            @enderror
+                        </div>
+
                         <!-- Stock -->
                         <div class="mb-3 col-md-6">
                             <label class="form-label fw-bold" for="stock">Stock <span
@@ -137,17 +164,59 @@
                         </div>
                     </div>
 
-                    <!-- Description -->
+                    <!-- Description courte -->
                     <div class="mb-4">
-                        <label class="form-label fw-bold" for="description">Description <span
-                                class="text-danger">*</span></label>
-                        <textarea name="description" id="description" class="form-control" rows="6"
-                            placeholder="Décrivez votre produit..." required>{{ old('description', isset($product) ? $product->description : '') }}</textarea>
-                        <div class="invalid-feedback">Veuillez entrer une description.</div>
+                        <label class="form-label fw-bold" for="description_courte">Description courte</label>
+                        <textarea name="description_courte" id="description_courte" class="form-control js-short-description"
+                            rows="3" maxlength="600"
+                            placeholder="Ex. : Bougie artisanale aux notes d'eucalyptus et de menthe, 50 h de combustion.">{{ old('description_courte', isset($product) ? $product->description_courte : '') }}</textarea>
+                        <div class="d-flex justify-content-between align-items-start mt-1">
+                            <small class="text-muted">
+                                Résumé court du produit, affiché près du prix et du bouton d'achat.
+                                1 à 4 phrases, idéalement 150 à 300 caractères.
+                            </small>
+                            <small class="text-muted text-nowrap ms-3"><span class="js-short-count">0</span>/600</small>
+                        </div>
+                        @error('description_courte')
+                            <div class="text-danger">{{ $message }}</div>
+                        @enderror
+                    </div>
+
+                    <!-- Description longue (éditeur enrichi) -->
+                    @php
+                        // Sanitisé avant injection : old() contient la saisie brute
+                        // renvoyée après une erreur de validation.
+                        $descriptionHtml = \App\Support\RichText::toHtml(
+                            old('description', isset($product) ? $product->editor_description : '')
+                        );
+                    @endphp
+                    <div class="mb-4">
+                        <label class="form-label fw-bold" for="description-editor">
+                            Description longue <span class="text-danger">*</span>
+                        </label>
+
+                        <div id="description-editor" class="js-quill-editor bg-white">{!! $descriptionHtml !!}</div>
+
+                        {{-- Valeur réellement postée, tenue à jour par Quill --}}
+                        <textarea name="description" id="description" hidden aria-hidden="true">{{ $descriptionHtml }}</textarea>
+
+                        <div id="description-error" class="text-danger mt-1 d-none">Veuillez entrer une description.</div>
+
+                        <small class="text-muted d-block mt-1">
+                            Description longue : présentez le produit, ses caractéristiques, matières, dimensions,
+                            utilisation, entretien et marque. Utilisez des titres et des listes pour faciliter la lecture.
+                            <strong>N'inventez aucune information.</strong><br>
+                            Conseil SEO : rédigez un contenu unique, naturel et utile. Évitez le bourrage de mots-clés.
+                        </small>
+
                         @error('description')
                             <div class="text-danger">{{ $message }}</div>
                         @enderror
                     </div>
+
+                    @include('admin.partials.variant-editor', ['variants' => collect()])
+
+                    @include('admin.partials.faq-editor', ['faqs' => collect(), 'uid' => 'product-faq'])
 
                     <!-- SEO Fields -->
                     <div class="mb-4">
@@ -205,11 +274,88 @@
 @endsection
 
 @section('css')
+    {{-- Quill : chargé uniquement sur les écrans d'édition produit --}}
+    <link rel="stylesheet" href="{{ asset('assets/vendor/libs/quill/typography.css') }}" />
+    <link rel="stylesheet" href="{{ asset('assets/vendor/libs/quill/editor.css') }}" />
+    <style>
+        #description-editor { min-height: 260px; }
+        #description-editor .ql-editor { min-height: 260px; font-size: .95rem; }
+        /* La toolbar reste utilisable sur petit écran. */
+        .ql-toolbar.ql-snow { flex-wrap: wrap; }
+        @media (max-width: 575.98px) {
+            .ql-toolbar.ql-snow .ql-formats { margin-right: .5rem; }
+        }
+    </style>
     <link rel="stylesheet" href="{{ asset('assets/vendor/libs/dropzone/dropzone.css') }}" />
     <link rel="stylesheet" href="{{ asset('assets/vendor/libs/select2/select2.css') }}" />
 @endsection
 
 @section('js')
+    @include('admin.partials.faq-editor-js')
+    @include('admin.partials.variant-editor-js')
+
+    {{-- Quill 1.3.7, fourni avec le thème admin : aucune dépendance npm ajoutée --}}
+    <script src="{{ asset('assets/vendor/libs/quill/quill.js') }}"></script>
+    <script>
+        (function () {
+            var container = document.getElementById('description-editor');
+            var field = document.getElementById('description');
+
+            if (!container || !field || typeof Quill === 'undefined') {
+                return;
+            }
+
+            var quill = new Quill(container, {
+                theme: 'snow',
+                placeholder: 'Présentez le produit : caractéristiques, matières, dimensions, utilisation…',
+                modules: {
+                    toolbar: [
+                        ['bold', 'italic', 'underline', 'strike'],
+                        [{ header: 2 }, { header: 3 }],
+                        [{ list: 'ordered' }, { list: 'bullet' }],
+                        ['link'],
+                        ['clean']
+                    ]
+                },
+                formats: ['bold', 'italic', 'underline', 'strike', 'header', 'list', 'link']
+            });
+
+            // Synchronisation continue : le formulaire est soumis par du JS
+            // (Dropzone appelle form.submit(), qui ne déclenche pas 'submit').
+            var sync = function () {
+                field.value = quill.getText().trim() === '' ? '' : quill.root.innerHTML;
+            };
+
+            quill.on('text-change', sync);
+            sync();
+
+            var form = field.closest('form');
+            var error = document.getElementById('description-error');
+
+            if (form) {
+                form.addEventListener('submit', function (event) {
+                    sync();
+
+                    if (field.value === '') {
+                        event.preventDefault();
+                        event.stopImmediatePropagation();
+
+                        if (error) {
+                            error.classList.remove('d-none');
+                        }
+
+                        container.scrollIntoView({ behavior: 'smooth', block: 'center' });
+
+                        return;
+                    }
+
+                    if (error) {
+                        error.classList.add('d-none');
+                    }
+                }, true); // capture : passe avant le handler Dropzone
+            }
+        })();
+    </script>
     <script src="{{ asset('assets/vendor/libs/dropzone/dropzone.js') }}"></script>
     <script src="{{ asset('assets/vendor/libs/select2/select2.js') }}"></script>
     <script>
@@ -340,3 +486,23 @@
         })();
     </script>
 @endsection
+
+{{-- Compteur de caractères de la description courte --}}
+<script>
+    document.querySelectorAll('.js-short-description').forEach(function (field) {
+        var counter = field.closest('.mb-4').querySelector('.js-short-count');
+
+        if (!counter) {
+            return;
+        }
+
+        var sync = function () {
+            counter.textContent = field.value.length;
+            // 150-300 caractères : plage recommandée, signalée sans bloquer la saisie.
+            counter.parentElement.classList.toggle('text-success', field.value.length >= 150 && field.value.length <= 300);
+        };
+
+        field.addEventListener('input', sync);
+        sync();
+    });
+</script>

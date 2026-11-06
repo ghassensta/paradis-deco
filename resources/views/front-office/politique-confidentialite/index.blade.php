@@ -1,8 +1,9 @@
 @extends('front-office.layouts.app')
+
+@section('description', 'Politique de confidentialité complète de Paradis Déco : protection des données, cookies, droits RGPD, sécurité. Conforme à la loi tunisienne 2004-63.')
 @section('title', 'Politique de Confidentialité Détaillée | Paradis Déco Tunisie')
 
 @section('meta')
-    <meta name="description" content="Politique de confidentialité complète de Paradis Déco : protection des données, cookies, droits RGPD, sécurité. Conforme à la loi tunisienne 2004-63.">
     <meta name="keywords" content="confidentialité données Tunisie, protection vie privée, RGPD Tunisie, cookies site e-commerce, sécurité données personnelles">
     <link rel="canonical" href="{{ url()->current() }}">
 

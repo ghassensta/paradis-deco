@@ -15,6 +15,7 @@ use App\Http\Controllers\InspirationsController;
 use App\Http\Controllers\OrderController;
 use App\Http\Controllers\PdfController;
 use App\Http\Controllers\ProductController;
+use App\Http\Controllers\SitemapController;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Auth\ForgotPasswordController;
 use App\Http\Controllers\Auth\ResetPasswordController;
@@ -24,7 +25,7 @@ Route::get('/', [AccueilController::class, 'nouveautes'])->name('welcome')->midd
 
 Route::get('/article/{slug}', action: [AccueilController::class, 'ProduitShow'])->name('preview-article');
 Route::get('/inspiration/{slug}', action: [AccueilController::class, 'InspirationShow'])->name('preview-inspiration');
-Route::resource('/checkout', CheckoutController::class);
+Route::get('/checkout', [CheckoutController::class, 'index'])->name('checkout.index');
 Route::post('/order/submit', [CheckoutController::class, 'storeOrder'])
     ->name('order.submit');
 Route::get('/toutes/produits', [AccueilController::class, 'AllProduits'])->name('allproduits');
@@ -41,6 +42,10 @@ Route::get('/inspiration', function () {
     return view('products.inspiration');
 });
 
+Route::get('/sitemap.xml', [SitemapController::class, 'index'])->name('sitemap');
+Route::get('/robots.txt', [SitemapController::class, 'robots'])->name('robots');
+Route::get('/llms.txt', [SitemapController::class, 'llms'])->name('llms');
+
 Route::get('/a-propos', [AboutController::class, 'index'])
     ->name('about');
 
@@ -53,6 +58,7 @@ Route::post('/contact', [ContactController::class, 'submit'])
     ->name('contact.submit');
 
 Route::get('/collections/{slug}', [AccueilController::class, 'CategorieProduits'])->name('categorie.produits');
+Route::get('/collections/{parent}/{slug}', [AccueilController::class, 'SousCategorieProduits'])->name('categorie.sous-categorie');
 Route::post('avis/produit/store/', [AccueilController::class, 'storeReview'])->name('avis.storeReview');
 
 Route::get('/faq', [AboutController::class, 'faq'])
@@ -103,13 +109,12 @@ Route::prefix('admin/paradis-deco')->group(function () {
 
         Route::put('inspirations/toggle/{id}', [InspirationsController::class, 'toggleActive'])->name('inspirations.toggle');
         // CRUD commandes
-        Route::resource('commandes', OrderController::class);
-        Route::resource('produits', ProductController::class);
-        Route::resource('categories', CategoryController::class);
+        Route::resource('commandes', OrderController::class)->only(['index', 'store', 'destroy']);
+        Route::resource('produits', ProductController::class)->except(['show']);
+        Route::resource('categories', CategoryController::class)->only(['index', 'store', 'edit', 'update', 'destroy']);
         Route::resource('configurations', ConfigurationController::class);
-        Route::resource('avis', AvisController::class);
-        Route::resource('inspirations', InspirationsController::class);
-        Route::resource('avis', AvisController::class);
+        Route::resource('avis', AvisController::class)->only(['index', 'store', 'edit', 'update', 'destroy']);
+        Route::resource('inspirations', InspirationsController::class)->except(['show']);
 
         //get-commandes-ajax
         Route::get('ajax/get-commandes', [AjaxController::class, 'getCommandes'])->name('commandes.get');

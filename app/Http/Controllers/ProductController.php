@@ -3,6 +3,10 @@
 namespace App\Http\Controllers;
 
 use App\Models\Category;
+use App\Support\FaqSync;
+use App\Support\ImageStorage;
+use App\Support\RichText;
+use App\Support\VariantSync;
 use App\Models\Product;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
@@ -21,8 +25,9 @@ class ProductController extends Controller
 
     public function create()
     {
-        $categories = Category::where('is_active', true)->get();
-        return view('admin.products.create', compact('categories'));
+        return view('admin.products.create', [
+            'categories' => $this->categoryTree(),
+        ]);
     }
 
     public function store(Request $request)
@@ -31,18 +36,22 @@ class ProductController extends Controller
             'name' => 'required|string|max:255|unique:products,name',
             'price' => 'required|numeric|min:0',
             'stock' => 'required|integer|min:0',
-            'image_avant' => 'required|image',
+            'sku' => 'nullable|string|max:255|unique:products,sku',
+            'image_avant' => ImageStorage::rule(required: true),
             'description' => 'required|string',
+            'description_courte' => 'nullable|string|max:600',
             'category_ids' => 'required|array|min:1',
             'category_ids.*' => 'exists:categories,id',
             'mediaimage' => 'nullable|array|max:5',
-            'mediaimage.*' => 'image',
+            'mediaimage.*' => ImageStorage::rule(),
             'old_media_images' => 'nullable|string',
             'is_active' => 'sometimes|boolean',
             'meta_title' => 'nullable|string|max:255',
             'meta_keywords' => 'nullable|string|max:255',
             'meta_description' => 'nullable|string|max:255',
         ];
+
+        $rules = array_merge($rules, FaqSync::rules(), VariantSync::rules());
 
         $validator = Validator::make($request->all(), $rules);
 
@@ -56,13 +65,11 @@ class ProductController extends Controller
         $coverImagePath = null;
 
         if ($request->hasFile('image_avant')) {
-            $filename = Str::uuid() . '.webp';
-            $path = 'products/cover/' . $filename;
-
-            $image = Image::read($request->file('image_avant'))->toWebp(80);
-            Storage::disk('public')->put($path, (string) $image);
-
-            $coverImagePath = $path;
+            $coverImagePath = ImageStorage::store(
+                $request->file('image_avant'),
+                'products/cover',
+                $request->input('name')
+            );
         }
 
         /** ---------------- Multiple Images ---------------- */
@@ -75,41 +82,73 @@ class ProductController extends Controller
         if ($request->hasFile('mediaimage')) {
             foreach ($request->file('mediaimage') as $file) {
                 if ($file->isValid()) {
-                    $filename = Str::uuid() . '.webp';
-                    $path = 'products/media/' . $filename;
-
-                    $image = Image::read($file)->toWebp(80);
-                    Storage::disk('public')->put($path, (string) $image);
-
-                    $images[] = $path;
+                    $images[] = ImageStorage::store($file, 'products/media', $request->input('name'));
                 }
             }
         }
 
-        Product::create([
+        $product = Product::create([
             'name' => $validated['name'],
             'slug' => Str::slug($validated['name']),
             'image_avant' => $coverImagePath,
             'images' => $images,
             'price' => $validated['price'],
             'stock' => $validated['stock'],
-            'description' => $validated['description'],
+            // La colonne porte un index unique : '' collisionnerait entre produits.
+            'sku' => ($validated['sku'] ?? null) ?: null,
+            'description' => RichText::toHtml($validated['description']),
+            'description_courte' => ($validated['description_courte'] ?? null) ?: null,
             'meta_title' => $validated['meta_title'] ?? null,
             'meta_keywords' => $validated['meta_keywords'] ?? null,
             'meta_description' => $validated['meta_description'] ?? null,
             'is_active' => $request->boolean('is_active', true),
-            'category_ids' => $validated['category_ids'],
+            'category_ids' => $this->normalizeCategoryIds($validated['category_ids']),
 
         ]);
+
+        FaqSync::apply($product, $request->input('faqs'));
+
+        // Le marqueur distingue « toutes les lignes supprimées » d'un envoi
+        // qui ne vient pas de ce formulaire et ne doit rien effacer.
+        if ($request->boolean('variants_present')) {
+            VariantSync::apply($product, $validated['variants'] ?? null);
+        }
 
         return redirect()->route('produits.index')
             ->with('message', 'Produit créé avec succès');
     }
 
+    /** Catégories principales avec leurs sous-catégories, pour les optgroup. */
+    private function categoryTree()
+    {
+        return Category::active()
+            ->roots()
+            ->with(['activeChildren' => fn ($q) => $q->ordered()])
+            ->ordered()
+            ->get();
+    }
+
+    /**
+     * Garantit la cohérence de l'arborescence : sélectionner une sous-catégorie
+     * rattache implicitement le produit à sa catégorie parente.
+     */
+    private function normalizeCategoryIds(array $ids): array
+    {
+        $categories = Category::whereIn('id', $ids)->get(['id', 'parent_id']);
+
+        return $categories
+            ->flatMap(fn ($c) => array_filter([$c->id, $c->parent_id]))
+            ->map(fn ($id) => (int) $id)
+            ->unique()
+            ->values()
+            ->all();
+    }
+
     public function edit($id)
     {
         $product = Product::findOrFail($id);
-        $categories = Category::where('is_active', true)->get();
+        $product->load('faqs', 'variants');
+        $categories = $this->categoryTree();
 
         return view('admin.products.edit', compact('product', 'categories'));
     }
@@ -122,12 +161,14 @@ class ProductController extends Controller
             'name' => 'required|string|max:255|unique:products,name,' . $id,
             'price' => 'required|numeric|min:0',
             'stock' => 'required|integer|min:0',
-            'image_avant' => 'nullable|image',
+            'sku' => 'nullable|string|max:255|unique:products,sku,' . $id,
+            'image_avant' => ImageStorage::rule(),
             'description' => 'required|string',
+            'description_courte' => 'nullable|string|max:600',
             'category_ids' => 'required|array|min:1',
             'category_ids.*' => 'exists:categories,id',
             'mediaimage' => 'nullable|array|max:5',
-            'mediaimage.*' => 'image',
+            'mediaimage.*' => ImageStorage::rule(),
             'old_media_images' => 'nullable|string',
             'is_active' => 'sometimes|boolean',
             'meta_title' => 'nullable|string|max:255',
@@ -135,21 +176,18 @@ class ProductController extends Controller
             'meta_description' => 'nullable|string|max:255',
         ];
 
+        $rules = array_merge($rules, FaqSync::rules(), VariantSync::rules());
+
         $validated = $request->validate($rules);
 
         /** ---------------- Cover Image ---------------- */
         if ($request->hasFile('image_avant')) {
-            if ($product->image_avant) {
-                Storage::disk('public')->delete($product->image_avant);
-            }
-
-            $filename = Str::uuid() . '.webp';
-            $path = 'products/cover/' . $filename;
-
-            $image = Image::read($request->file('image_avant'))->toWebp(80);
-            Storage::disk('public')->put($path, (string) $image);
-
-            $product->image_avant = $path;
+            $product->image_avant = ImageStorage::replace(
+                $request->file('image_avant'),
+                'products/cover',
+                $product->image_avant,
+                $request->input('name')
+            );
         }
 
         /** ---------------- Multiple Images ---------------- */
@@ -162,30 +200,34 @@ class ProductController extends Controller
         if ($request->hasFile('mediaimage')) {
             foreach ($request->file('mediaimage') as $file) {
                 if ($file->isValid()) {
-                    $filename = Str::uuid() . '.webp';
-                    $path = 'products/media/' . $filename;
-
-                    $image = Image::read($file)->toWebp(80);
-                    Storage::disk('public')->put($path, (string) $image);
-
-                    $images[] = $path;
+                    $images[] = ImageStorage::store($file, 'products/media', $request->input('name'));
                 }
             }
         }
 
         $product->update([
             'name' => $validated['name'],
-            'slug' => Str::slug($validated['name']),
+            // Le slug n'est pas régénéré : /article/{slug} est indexé.
             'images' => $images,
             'price' => $validated['price'],
             'stock' => $validated['stock'],
-            'description' => $validated['description'],
+            'sku' => ($validated['sku'] ?? null) ?: null,
+            'description' => RichText::toHtml($validated['description']),
+            'description_courte' => ($validated['description_courte'] ?? null) ?: null,
             'is_active' => $request->boolean('is_active', $product->is_active),
-            'category_ids' => $validated['category_ids'],
+            'category_ids' => $this->normalizeCategoryIds($validated['category_ids']),
                'meta_title' => $validated['meta_title'] ?? null,
             'meta_keywords' => $validated['meta_keywords'] ?? null,
             'meta_description' => $validated['meta_description'] ?? null,
         ]);
+
+        FaqSync::apply($product, $request->input('faqs'));
+
+        // Le marqueur distingue « toutes les lignes supprimées » d'un envoi
+        // qui ne vient pas de ce formulaire et ne doit rien effacer.
+        if ($request->boolean('variants_present')) {
+            VariantSync::apply($product, $validated['variants'] ?? null);
+        }
 
         return redirect()->route('produits.index')
             ->with('message', 'Produit mis à jour avec succès');
@@ -204,6 +246,8 @@ class ProductController extends Controller
                 Storage::disk('public')->delete($image);
             }
         }
+
+        $product->variants->each(fn ($variant) => ImageStorage::delete($variant->image));
 
         $product->delete();
 

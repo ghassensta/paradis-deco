@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
 use App\Models\Avis;
+use App\Support\RichText;
 use App\Models\Product;
 use Illuminate\Support\Facades\Validator;
 class AvisController extends Controller
@@ -115,12 +116,6 @@ class AvisController extends Controller
         ]);
     }
 
-    public function create()
-    {
-        $products = Product::all();
-        return view('admin.avis.create', compact('products'));
-    }
-
     public function store(Request $request)
     {
         $validator = Validator::make($request->all(), [
@@ -137,7 +132,11 @@ class AvisController extends Controller
             ], 422);
         }
 
-        $avis = Avis::create($request->all());
+        $data = $validator->validated();
+        $data['comment'] = RichText::toText($data['comment'] ?? null);
+        $data['name'] = RichText::toText($data['name'] ?? null);
+
+        $avis = Avis::create($data);
         return response()->json([
             'success' => true,
             'message' => 'Avis créé avec succès'

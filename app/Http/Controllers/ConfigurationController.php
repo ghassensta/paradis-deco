@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Configuration;
+use App\Support\ImageStorage;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
@@ -62,8 +63,8 @@ class ConfigurationController extends Controller
             'support_email'           => 'required|email|max:255',
             /* langues dispos */
             'default_language'        => 'required|string|in:en,fr,es',
-            /* devises autorisées */
-            'currency'                => 'required|string|in:USD,EUR,GBP',
+            /* devises autorisées — TND ajouté : la boutique vend en Tunisie */
+            'currency'                => 'required|string|in:TND,USD,EUR,GBP',
             'meta_title'              => 'nullable|string|max:255',
             'meta_description'        => 'nullable|string|max:1000',
             'shipping_cost'           => 'required|numeric|min:0',
@@ -71,48 +72,63 @@ class ConfigurationController extends Controller
             'delivery_estimate_days'  => 'required|integer|min:1',
             'maintenance_mode'        => 'required|boolean',
             /* fichiers : JPEG / PNG / JPG / WEBP / AVIF / GIF */
-            'site_logo'       => 'nullable|image|',
-            'homepage_banner' => 'nullable|image|',
+            'site_logo'       => ImageStorage::rule(),
+            'homepage_banner' => ImageStorage::rule(),
+            'og_image'        => ImageStorage::rule(),
+
+            /* Contact — alimentent le pied de page et les données structurées */
+            'support_phone'   => 'nullable|string|max:30',
+            'address'         => 'nullable|string|max:255',
+            'city'            => 'nullable|string|max:120',
+            'working_hours'   => 'nullable|string|max:255',
+
+            /* Réseaux sociaux */
+            'facebook_url'    => 'nullable|url|max:255',
+            'instagram_url'   => 'nullable|url|max:255',
+            'tiktok_url'      => 'nullable|url|max:255',
+            'whatsapp_number' => 'nullable|string|max:30',
+
+            /* Tracking — l'identifiant reste libre : les formats évoluent */
+            'meta_pixel_id'       => 'nullable|string|max:64',
+            'meta_pixel_enabled'  => 'nullable|boolean',
+            'tiktok_pixel_id'     => 'nullable|string|max:64',
+            'tiktok_pixel_enabled' => 'nullable|boolean',
+            'ga4_measurement_id'  => 'nullable|string|max:64',
+            'ga4_enabled'         => 'nullable|boolean',
         ]);
+
+        // Les cases décochées ne sont pas postées : on les force à false.
+        foreach (['meta_pixel_enabled', 'tiktok_pixel_enabled', 'ga4_enabled'] as $flag) {
+            $validated[$flag] = $request->boolean($flag);
+        }
 
         $setting = Configuration::firstOrFail();
 
         /* 2. Gestion du logo */
-        if ($request->hasFile('site_logo') && $request->file('site_logo')->isValid()) {
-            // Supprimer l’ancien fichier s’il existe
-            if ($setting->site_logo) {
-                Storage::disk('public')->delete($setting->site_logo);
-            }
-
-            // Nouveau nom de fichier
-            $filename = Str::slug($validated['site_name']) . '-logo-' . uniqid() . '.webp';
-            $path = 'logos/' . $filename;
-
-            // Convertir en WebP avec Intervention Image
-            $image = Image::read($request->file('site_logo'))->toWebp(80);
-            Storage::disk('public')->put($path, (string) $image);
-
-            // Stocke le chemin relatif
-            $validated['site_logo'] = $path;
+        if ($request->hasFile('site_logo')) {
+            $validated['site_logo'] = ImageStorage::replace(
+                $request->file('site_logo'),
+                'logos',
+                $setting->site_logo
+            );
         }
 
         /* 3. Gestion du banner */
-        if ($request->hasFile('homepage_banner') && $request->file('homepage_banner')->isValid()) {
-            // Supprimer l’ancien fichier s’il existe
-            if ($setting->homepage_banner) {
-                Storage::disk('public')->delete($setting->homepage_banner);
-            }
+        if ($request->hasFile('homepage_banner')) {
+            $validated['homepage_banner'] = ImageStorage::replace(
+                $request->file('homepage_banner'),
+                'banners',
+                $setting->homepage_banner
+            );
+        }
 
-            // Nouveau nom de fichier
-            $filename = 'banner-' . uniqid() . '.webp';
-            $path = 'banners/' . $filename;
-
-            // Convertir en WebP avec Intervention Image
-            $image = Image::read($request->file('homepage_banner'))->toWebp(80);
-            Storage::disk('public')->put($path, (string) $image);
-
-            // Stocke le chemin relatif
-            $validated['homepage_banner'] = $path;
+        /* 3 bis. Image Open Graph */
+        if ($request->hasFile('og_image')) {
+            $validated['og_image'] = ImageStorage::replace(
+                $request->file('og_image'),
+                'banners',
+                $setting->og_image
+            );
         }
 
         /* 4. Mise à jour */

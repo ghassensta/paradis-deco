@@ -25,7 +25,7 @@
         <ul style="list-style: none; padding: 0; margin: 0;">
             @foreach($order->items as $item)
             <li style="display: flex; justify-content: space-between; padding: 10px 0; border-bottom: 1px dashed #e2e8f0;">
-                <span style="flex: 2;">{{ $item->product->name }}</span>
+                <span style="flex: 2;">{{ $item->product->name }}@if ($item->variant_label) — {{ $item->variant_label }}@endif</span>
                 <span style="flex: 1; text-align: center;">× {{ $item->quantity }}</span>
                 <span style="flex: 1; text-align: right;">{{ number_format($item->subtotal, 2, ',', ' ') }} TND</span>
             </li>
