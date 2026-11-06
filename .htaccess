@@ -2,14 +2,13 @@
 Options +FollowSymLinks
 RewriteEngine On
 
-RewriteCond %{REQUEST_URI} !^/public/ 
+# Fichier de verification Google Search Console (reste a la racine)
+RewriteRule ^google86e093cf9edfd147\.html$ - [L]
 
-RewriteCond %{REQUEST_FILENAME} !-d
-RewriteCond %{REQUEST_FILENAME} !-f
+# Page d accueil
+RewriteRule ^$ public/index.php [L]
 
-
-
-RewriteRule ^(.*)$ /public/$1 
-#RewriteRule ^ index.php [L]
-RewriteRule ^(/)?$ public/index.php [L] 
+# Tout le reste passe par public/ : les fichiers du projet (.env, storage/logs, vendor, composer.json...) ne sont plus servis
+RewriteCond %{REQUEST_URI} !^/public/
+RewriteRule ^(.*)$ public/$1 [L]
 </IfModule>
