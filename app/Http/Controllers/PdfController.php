@@ -28,7 +28,7 @@ class PdfController extends Controller
             'numero_commande' => $commande->numero_commande,
             'date' => $commande->created_at ? $commande->created_at->format('d/m/Y') : 'N/A',
             'client' => $commande->client->name ?? 'N/A',
-            'adresse' => $commande->client->adresse ?? 'N/A',
+            'adresse' => collect([$commande->address ?? $commande->client->adresse ?? null, $commande->city])->filter()->implode(', ') ?: 'N/A',
             'statut' => $commande->statut->name ?? 'N/A',
             'items' => $commande->items,
             'subtotal_ht' => $commande->subtotal_ht ?? 0,

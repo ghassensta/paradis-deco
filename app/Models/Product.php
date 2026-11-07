@@ -186,6 +186,43 @@ class Product extends Model
         return $categories->firstWhere('parent_id', '!=', null) ?? $categories->first();
     }
 
+    /** Garantit l'unicité du slug sans écraser celui d'un autre produit. */
+    public static function uniqueSlug(string $name, ?int $ignoreId = null): string
+    {
+        $base = Str::slug($name) ?: 'produit';
+        $slug = $base;
+        $i = 2;
+
+        while (static::where('slug', $slug)
+            ->when($ignoreId, fn ($q) => $q->where('id', '!=', $ignoreId))
+            ->exists()) {
+            $slug = $base . '-' . $i++;
+        }
+
+        return $slug;
+    }
+
+    public function slugRedirects(): HasMany
+    {
+        return $this->hasMany(ProductSlugRedirect::class);
+    }
+
+    /**
+     * Change le slug en gardant l'ancien comme redirection 301. Le nouveau
+     * slug cesse d'être une redirection s'il en était une.
+     */
+    public function changeSlug(string $slug): void
+    {
+        if ($slug === $this->slug) {
+            return;
+        }
+
+        ProductSlugRedirect::where('old_slug', $slug)->delete();
+        ProductSlugRedirect::updateOrCreate(['old_slug' => $this->slug], ['product_id' => $this->id]);
+
+        $this->update(['slug' => $slug]);
+    }
+
     public function variants(): HasMany
     {
         return $this->hasMany(ProductVariant::class)->ordered();

@@ -94,7 +94,8 @@ public function getCommandes(Request $request)
             'date_full' => $row->created_at->format('d/m/Y H:i'),
             'client_name' => optional($row->client)->name ?? 'N/A',
             'client_phone' => optional($row->client)->phone ?? 'N/A',
-            'client_adresse' => optional($row->client)->adresse ?? 'N/A',
+            // Adresse de cette commande ; les anciennes n'ont que celle du client.
+            'client_adresse' => collect([$row->address ?? optional($row->client)->adresse, $row->city])->filter()->implode(', ') ?: 'N/A',
             'total_ttc' => number_format($row->total_ttc ?? 0, 3, '.', ''),
             'subtotal_ht' => number_format($row->subtotal_ht ?? 0, 3, '.', ''),
             'shipping_cost' => number_format($row->shipping_cost ?? 0, 3, '.', ''),

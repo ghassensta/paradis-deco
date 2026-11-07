@@ -152,7 +152,7 @@
 
                     <div class="grid grid-cols-1 xs:grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 sm:gap-6">
                         @forelse($products as $product)
-                            <article class="bg-white rounded-xl overflow-hidden group transition-all duration-300 hover:shadow-lg border border-gray-100 hover:border-gray-200">
+                            <article class="relative bg-white rounded-xl overflow-hidden group transition-all duration-300 hover:shadow-lg border border-gray-100 hover:border-gray-200">
                                 <div class="relative overflow-hidden aspect-square">
                                     <a href="{{ route('preview-article', $product->slug) }}" class="block h-full">
                                         <img src="{{ asset('storage/' . ($product->image_avant ?? ($product->images[0] ?? ''))) }}"
@@ -184,18 +184,19 @@
                                 <div class="p-4">
                                     <div class="mb-3">
                                         <h3 class="text-base font-semibold text-gray-900 hover:text-primary transition-colors mb-1 line-clamp-2">
-                                            <a href="{{ route('preview-article', $product->slug) }}">{{ $product->name }}</a>
+                                            <a href="{{ route('preview-article', $product->slug) }}" class="after:absolute after:inset-0 after:content-['']">{{ $product->name }}</a>
                                         </h3>
                                         <p class="text-gray-500 text-xs sm:text-sm line-clamp-2 mb-2">
                                             {{ $product->description ? Str::limit(strip_tags($product->description), 80) : 'Produit décoratif moderne et élégant disponible chez Paradis Déco.' }}
                                         </p>
 
-                                        <div class="flex items-center mb-2">
-                                            <svg class="w-4 h-4 text-yellow-400 mr-1" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg">
-                                                <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"></path>
-                                            </svg>
-                                            <span class="text-xs font-medium text-gray-600">4.8</span>
-                                        </div>
+                                        @if (($product->approved_reviews_count ?? 0) > 0)
+                                        <p class="mb-2 flex items-center gap-1 text-xs text-gray-600">
+                                            <span aria-hidden="true" class="text-yellow-400">★</span>
+                                            <span class="font-medium">{{ number_format($product->approved_reviews_avg, 1, ',', ' ') }}</span>
+                                            <span class="text-gray-400">({{ $product->approved_reviews_count }} avis)</span>
+                                        </p>
+                                    @endif
                                     </div>
 
                                     <div class="flex justify-between items-center">
@@ -206,7 +207,7 @@
 
                                         @if ($product->has_variants)
                                             <a href="{{ route('preview-article', $product->slug) }}" aria-label="Choisir une option pour {{ $product->name }}"
-                                               class="flex items-center justify-center bg-black hover:bg-gray-800 text-white p-2 rounded-lg transition-all duration-300">
+                                               class="relative z-10 flex items-center justify-center bg-black hover:bg-gray-800 text-white p-2 rounded-lg transition-all duration-300">
                                                 <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
                                             </a>
                                         @else
@@ -216,7 +217,7 @@
                                                 data-price="{{ $product->price }}"
                                                 data-image="{{ asset('storage/' . ($product->image_avant ?? ($product->images[0] ?? ''))) }}"
                                                 data-stock="{{ $product->stock }}"
-                                                class="cursor-pointer flex items-center justify-center gap-1 bg-black hover:bg-gray-800 text-white p-2 rounded-lg transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-primary focus:ring-opacity-50 hover:shadow-md"
+                                                class="relative z-10 cursor-pointer flex items-center justify-center gap-1 bg-black hover:bg-gray-800 text-white p-2 rounded-lg transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-primary focus:ring-opacity-50 hover:shadow-md"
                                                 @if ($product->stock == 0) disabled @endif
                                                 onclick="addToCart(this)">
                                             <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">

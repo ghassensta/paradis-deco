@@ -68,7 +68,7 @@
                             <input type="tel" id="phone" name="phone" required
                                 class="mt-1 block w-full rounded-lg border-gray-300 shadow-sm
                           focus:ring-[#dfb54e] focus:border-[#dfb54e] sm:text-sm p-2"
-                                placeholder="+216 12 345 678">
+                                placeholder="20 123 456">
                         </div>
 
                         <!-- Adresse -->
@@ -79,6 +79,25 @@
                           focus:ring-[#dfb54e] focus:border-[#dfb54e] sm:text-sm p-2"
                                 placeholder="123 Rue de la Déco">
                         </div>
+
+                        <!-- Gouvernorat -->
+                        <div>
+                            <label for="city" class="block text-sm font-medium text-gray-700">Gouvernorat *</label>
+                            <select id="city" name="city" required
+                                class="mt-1 block w-full rounded-lg border-gray-300 shadow-sm
+                          focus:ring-[#dfb54e] focus:border-[#dfb54e] sm:text-sm p-2 bg-white">
+                                <option value="">Choisir votre gouvernorat</option>
+                                @foreach (\App\Http\Controllers\CheckoutController::GOVERNORATES as $governorate)
+                                    <option value="{{ $governorate }}">{{ $governorate }}</option>
+                                @endforeach
+                            </select>
+                        </div>
+
+                        <p class="flex items-center gap-2 text-sm text-green-700">
+                            <i class="fas fa-check-circle" aria-hidden="true"></i>
+                            Paiement à la livraison : vous payez à la réception de votre commande.
+                        </p>
+
                         <button type="submit" id="submitOrder"
                             class="w-full bg-[#dfb54e] hover:bg-[#cfa640] text-white py-3 rounded-lg
                        font-semibold text-lg transition-colors duration-300 shadow-md
@@ -275,6 +294,19 @@
         document.addEventListener('DOMContentLoaded', () => {
             updateOrderSummary();
 
+            // Début de commande : une fois par affichage de la page, panier non vide.
+            const initialCart = sanitize(getCart());
+
+            if (initialCart.length > 0) {
+                window.paradisTrack('InitiateCheckout', {
+                    content_ids: initialCart.map(i => String(i.id)),
+                    content_type: 'product',
+                    num_items: initialCart.reduce((n, i) => n + i.quantity, 0),
+                    value: Number(initialCart.reduce((t, i) => t + i.price * i.quantity, 0).toFixed(3)),
+                    currency: @json($config->currency ?: 'TND')
+                });
+            }
+
             const form = document.getElementById('checkoutForm');
             const btn = document.getElementById('submitOrder');
             const spinner = document.getElementById('submitSpinner');
@@ -346,10 +378,11 @@
                             window.paradisTrack('Purchase', {
                                 order_id: reference,
                                 content_ids: cart.map(i => String(i.id)),
+                                content_type: 'product',
                                 num_items: cart.reduce((n, i) => n + i.quantity, 0),
                                 value: Number(cart.reduce((t, i) => t + i.price * i.quantity, 0).toFixed(3)),
                                 currency: @json($config->currency ?: 'TND')
-                            });
+                            }, reference ? `order-${reference}` : undefined);
 
                             if (reference) {
                                 // On ne conserve que les dernières références :

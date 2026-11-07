@@ -76,6 +76,8 @@
                                 <div class="text-danger">{{ $message }}</div>
                             @enderror
                         </div>
+
+                        @include('admin.partials.product-slug')
                         <div class="mb-3 col-md-6">
                             <label class="form-label fw-bold" for="category_ids">
                                 Catégories <span class="text-danger">*</span>

@@ -32,8 +32,11 @@ class ProductController extends Controller
 
     public function store(Request $request)
     {
+        $this->normalizeSlug($request);
+
         $rules = [
             'name' => 'required|string|max:255|unique:products,name',
+            'slug' => 'nullable|string|max:255|unique:products,slug',
             'price' => 'required|numeric|min:0',
             'stock' => 'required|integer|min:0',
             'sku' => 'nullable|string|max:255|unique:products,sku',
@@ -89,7 +92,7 @@ class ProductController extends Controller
 
         $product = Product::create([
             'name' => $validated['name'],
-            'slug' => Str::slug($validated['name']),
+            'slug' => ($validated['slug'] ?? null) ?: Product::uniqueSlug($validated['name']),
             'image_avant' => $coverImagePath,
             'images' => $images,
             'price' => $validated['price'],
@@ -116,6 +119,14 @@ class ProductController extends Controller
 
         return redirect()->route('produits.index')
             ->with('message', 'Produit créé avec succès');
+    }
+
+    /** « Lampe Dorée 60 cm » devient lampe-doree-60-cm avant la validation d'unicité. */
+    private function normalizeSlug(Request $request): void
+    {
+        if ($request->filled('slug')) {
+            $request->merge(['slug' => Str::slug($request->input('slug'))]);
+        }
     }
 
     /** Catégories principales avec leurs sous-catégories, pour les optgroup. */
@@ -157,8 +168,11 @@ class ProductController extends Controller
     {
         $product = Product::findOrFail($id);
 
+        $this->normalizeSlug($request);
+
         $rules = [
             'name' => 'required|string|max:255|unique:products,name,' . $id,
+            'slug' => 'nullable|string|max:255|unique:products,slug,' . $id,
             'price' => 'required|numeric|min:0',
             'stock' => 'required|integer|min:0',
             'sku' => 'nullable|string|max:255|unique:products,sku,' . $id,
@@ -205,9 +219,14 @@ class ProductController extends Controller
             }
         }
 
+        // Le slug n'est jamais régénéré depuis le nom : seul un changement
+        // explicite le modifie, et l'ancienne URL redirige alors en 301.
+        if (filled($validated['slug'] ?? null)) {
+            $product->changeSlug($validated['slug']);
+        }
+
         $product->update([
             'name' => $validated['name'],
-            // Le slug n'est pas régénéré : /article/{slug} est indexé.
             'images' => $images,
             'price' => $validated['price'],
             'stock' => $validated['stock'],

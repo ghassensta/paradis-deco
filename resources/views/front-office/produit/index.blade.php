@@ -240,6 +240,21 @@
                     <div class="mb-6">
                         <p class="text-3xl font-bold text-gray-900"><span id="productPrice">{{ number_format($displayPrice, 2) }}</span> DT</p>
                         <p class="text-sm text-gray-500">TVA incluse</p>
+                        @php
+                            $shippingFee = (float) ($config->shipping_cost ?? 0);
+                            $freeFrom = (float) ($config->free_shipping_threshold ?? 0);
+                            $dt = fn ($v) => number_format($v, fmod($v, 1) ? 2 : 0, ',', ' ') . ' DT';
+                        @endphp
+                        <p class="mt-1 text-sm text-gray-600">
+                            @if ($shippingFee > 0)
+                                + {{ $dt($shippingFee) }} de livraison
+                                @if ($freeFrom > 0)
+                                    · <strong>offerte dès {{ $dt($freeFrom) }}</strong>
+                                @endif
+                            @else
+                                <strong>Livraison offerte</strong>
+                            @endif
+                        </p>
                     </div>
                     <div class="mb-6">
                         {{-- Résumé : le détail complet vit dans sa propre section plus bas. --}}
@@ -501,7 +516,7 @@
                 @forelse ($similarProducts as $item)
                     @if ($item->is_active)
                         <article
-                            class="bg-white rounded-xl shadow-md overflow-hidden group hover:shadow-lg transition-all duration-300 transform hover:-translate-y-1 flex flex-col h-full"
+                            class="relative bg-white rounded-xl shadow-md overflow-hidden group hover:shadow-lg transition-all duration-300 transform hover:-translate-y-1 flex flex-col h-full"
                             >
                             <div class="relative overflow-hidden flex-grow">
                                 <a href="{{ route('preview-article', $item->slug) }}" target="_blank"
@@ -535,12 +550,14 @@
                                     <div class="flex justify-between items-start mb-2">
                                         <h3 class="text-lg font-semibold text-gray-800 hover:text-yellow-600 transition-colors line-clamp-2"
                                             >
-                                            <a href="{{ route('preview-article', $item->slug) }}">{{ $item->name }}</a>
+                                            <a href="{{ route('preview-article', $item->slug) }}" class="after:absolute after:inset-0 after:content-['']">{{ $item->name }}</a>
                                         </h3>
-                                        <div class="flex items-center ml-2" >
-                                            <i class="fas fa-star text-yellow-400 text-xs"></i>
-                                            <span class="text-gray-600 text-xs ml-1" >4.8</span>
-                                        </div>
+                                        @if (($item->approved_reviews_count ?? 0) > 0)
+                                            <p class="ml-2 flex shrink-0 items-center gap-1 text-xs text-gray-600">
+                                                <span aria-hidden="true" class="text-yellow-400">★</span>
+                                                {{ number_format($item->approved_reviews_avg, 1, ',', ' ') }}
+                                            </p>
+                                        @endif
                                     </div>
                                     <p class="text-gray-500 text-sm mb-4 line-clamp-2">
                                         {{ Str::limit($item->short_description, 60) }}</p>
@@ -554,7 +571,7 @@
                                         </p>
                                         @if ($item->has_variants)
                                             <a href="{{ route('preview-article', $item->slug) }}" aria-label="Choisir une option pour {{ $item->name }}"
-                                               class="flex items-center justify-center bg-black hover:bg-gray-800 text-white px-3 py-2 rounded-lg transition-colors duration-300">
+                                               class="relative z-10 flex items-center justify-center bg-black hover:bg-gray-800 text-white px-3 py-2 rounded-lg transition-colors duration-300">
                                                 <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
                                             </a>
                                         @else
@@ -563,7 +580,7 @@
                                             data-price="{{ $item->price }}"
                                             data-image="{{ $item->cover_url }}"
                                             data-stock="{{ $item->stock }}"
-                                            class="cursor-pointer flex items-center justify-center gap-1 bg-black hover:bg-gray-800 text-white px-3 py-2 rounded-lg transition-colors duration-300 focus:outline-none focus:ring-2 focus:ring-yellow-500 focus:ring-opacity-50 transform hover:scale-[1.03] active:scale-95 text-sm sm:text-base"
+                                            class="relative z-10 cursor-pointer flex items-center justify-center gap-1 bg-black hover:bg-gray-800 text-white px-3 py-2 rounded-lg transition-colors duration-300 focus:outline-none focus:ring-2 focus:ring-yellow-500 focus:ring-opacity-50 transform hover:scale-[1.03] active:scale-95 text-sm sm:text-base"
                                             @if ($item->stock == 0) disabled @endif onclick="addToCart(this)">
                                             <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 sm:h-5 sm:w-5"
                                                 fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -709,7 +726,8 @@
     <script>
         // ViewContent : consultation réelle d'une fiche, données du produit.
         window.paradisTrack && window.paradisTrack('ViewContent', {
-            content_ids: [@json((string) ($product->sku ?: $product->id))],
+            // Même identifiant que AddToCart et Purchase : Meta relie ainsi les évènements.
+            content_ids: [@json((string) $product->id)],
             content_name: @json($product->name),
             content_type: 'product',
             value: {{ (float) $product->price }},

@@ -99,6 +99,7 @@
                             <div class="mb-3">
                                 <label for="currency" class="form-label fw-semibold">Devise</label>
                                 <select class="form-select" id="currency" name="currency" required>
+                                    <option value="TND" {{ old('currency', $settings->currency ?? null) == 'TND' ? 'selected' : '' }}>TND (DT)</option>
                                     <option value="EUR" {{ old('currency', $settings->currency ?? null) == 'EUR' ? 'selected' : '' }}>EUR (€)</option>
                                     <option value="USD" {{ old('currency', $settings->currency ?? null) == 'USD' ? 'selected' : '' }}>USD ($)</option>
                                     <!-- Add more currencies as needed -->

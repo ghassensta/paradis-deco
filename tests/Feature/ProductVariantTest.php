@@ -96,6 +96,7 @@ class ProductVariantTest extends TestCase
             'full_name' => 'Client Test',
             'phone' => '20123456',
             'address' => 'Tunis',
+            'city' => 'Tunis',
             'cart' => [array_merge([
                 'id' => $product->id,
                 'name' => $product->name,
@@ -284,7 +285,7 @@ class ProductVariantTest extends TestCase
         $product->delete();
 
         $this->postJson('/order/submit', [
-            'full_name' => 'Client Test', 'phone' => '20123456', 'address' => 'Tunis',
+            'full_name' => 'Client Test', 'phone' => '20123456', 'address' => 'Tunis', 'city' => 'Tunis',
             'cart' => [['id' => $id, 'name' => 'Miroir', 'price' => 1, 'quantity' => 1]],
         ])->assertStatus(422);
     }
@@ -330,6 +331,32 @@ class ProductVariantTest extends TestCase
         $response = $this->get('/collections/lampes')->assertOk()->assertDontSee('&lt;p&gt;', false);
 
         $this->assertSame(1, $response->viewData('categories')->firstWhere('slug', 'lampes')->products_count);
+    }
+
+    public function test_aucune_note_n_est_affichee_sans_avis(): void
+    {
+        $category = Category::create(['name' => 'Lampes', 'slug' => 'lampes', 'image' => 'x.webp', 'is_active' => true]);
+
+        foreach (['lampe-a', 'lampe-b'] as $slug) {
+            Product::create([
+                'name' => $slug, 'slug' => $slug, 'description' => 'x', 'price' => 33, 'stock' => 1,
+                'is_active' => true, 'category_ids' => [$category->id], 'images' => [],
+            ]);
+        }
+
+        foreach (['/toutes/produits', '/collections/lampes', '/article/lampe-a'] as $url) {
+            $html = $this->get($url)->assertOk()->getContent();
+
+            $this->assertStringNotContainsString('>4.8<', $html, $url);
+            $this->assertStringNotContainsString('5.0', strip_tags($html), $url);
+        }
+    }
+
+    public function test_la_fiche_annonce_les_frais_de_livraison(): void
+    {
+        $this->product([]);
+
+        $this->get('/article/miroir')->assertOk()->assertSee('7,50 DT de livraison')->assertSee('offerte dès 120 DT');
     }
 
     /** Régression : hors de la section, le script ne trouvait pas le gabarit. */

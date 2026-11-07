@@ -350,7 +350,7 @@ document.addEventListener('DOMContentLoaded', () => {
         content_ids: [String(p.id)],
         content_name: p.name,
         content_type: 'product',
-        value: p.price,
+        value: Number((p.price * p.quantity).toFixed(3)),
         currency: TRACKING_CURRENCY
       });
 
@@ -452,20 +452,8 @@ document.addEventListener('DOMContentLoaded', () => {
     renderMiniCart();
 }
 
-  /* InitiateCheckout : au départ réel vers le tunnel de commande */
-  document.getElementById('checkoutCta')?.addEventListener('click', () => {
-    const cart = getCart();
-    const value = cart.reduce((sum, i) => sum + i.price * i.quantity, 0);
-
-    if (cart.length > 0) {
-      window.paradisTrack('InitiateCheckout', {
-        content_ids: cart.map(i => String(i.id)),
-        num_items: cart.reduce((n, i) => n + i.quantity, 0),
-        value: Number(value.toFixed(3)),
-        currency: TRACKING_CURRENCY
-      });
-    }
-  });
+  /* InitiateCheckout est émis par la page de commande elle-même : il couvre
+     aussi l'arrivée directe sur /checkout, sans double comptage. */
 
   /* Mini cart */
   function renderMiniCart(){

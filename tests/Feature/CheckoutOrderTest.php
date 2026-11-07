@@ -57,6 +57,7 @@ class CheckoutOrderTest extends TestCase
             'full_name' => 'Client Test',
             'phone' => '20123456',
             'address' => 'Tunis',
+            'city' => 'Tunis',
             'cart' => [[
                 'id' => $this->product->id,
                 'name' => $this->product->name,
@@ -72,6 +73,7 @@ class CheckoutOrderTest extends TestCase
             'full_name' => 'Client Test',
             'phone' => '20123456',
             'address' => 'Tunis',
+            'city' => 'Tunis',
             'checkout_key' => $key,
             'cart' => [['id' => $this->product->id, 'name' => 'Bougie', 'price' => 25, 'quantity' => 1]],
         ]);
@@ -111,6 +113,7 @@ class CheckoutOrderTest extends TestCase
             'full_name' => 'Client Test',
             'phone' => '20123456',
             'address' => 'Tunis',
+            'city' => 'Tunis',
             'checkout_key' => 'tentative-1',
             'cart' => [['id' => $this->product->id, 'name' => 'Bougie', 'price' => 25, 'quantity' => 1, 'variant_id' => $variant->id]],
         ];
@@ -131,6 +134,64 @@ class CheckoutOrderTest extends TestCase
         $this->submitWithKey('tentative-1')->assertOk();
 
         $this->assertSame(1, Order::count());
+    }
+
+    private function order(array $overrides)
+    {
+        return $this->postJson('/order/submit', array_merge([
+            'full_name' => 'Client Test',
+            'phone' => '20123456',
+            'address' => 'Tunis',
+            'city' => 'Tunis',
+            'cart' => [['id' => $this->product->id, 'name' => 'Bougie', 'price' => 25, 'quantity' => 1]],
+        ], $overrides));
+    }
+
+    public function test_le_telephone_est_normalise_a_8_chiffres(): void
+    {
+        Mail::fake();
+
+        $this->order(['phone' => '+216 20.123-456'])->assertOk();
+
+        $this->assertSame('20123456', Order::first()->client->phone);
+    }
+
+    public function test_un_telephone_invalide_est_refuse_en_francais(): void
+    {
+        $this->order(['phone' => '123'])
+            ->assertStatus(422)
+            ->assertJsonPath('errors.phone.0', 'Le numéro de téléphone doit comporter 8 chiffres (ex. : 20 123 456).');
+    }
+
+    public function test_le_gouvernorat_est_obligatoire_et_doit_exister(): void
+    {
+        $this->order(['city' => ''])->assertStatus(422)->assertJsonPath('errors.city.0', 'Veuillez choisir votre gouvernorat.');
+        $this->order(['city' => 'Paris'])->assertStatus(422);
+        $this->assertSame(0, Order::count());
+    }
+
+    /** Un client qui déménage doit être livré à sa nouvelle adresse. */
+    public function test_chaque_commande_garde_son_adresse(): void
+    {
+        Mail::fake();
+
+        $this->order(['address' => 'Ancienne rue', 'city' => 'Tunis', 'checkout_key' => 'a'])->assertOk();
+        $this->order(['address' => 'Nouvelle rue', 'city' => 'Sousse', 'checkout_key' => 'b'])->assertOk();
+
+        [$first, $second] = Order::orderBy('id')->get();
+
+        $this->assertSame(['Ancienne rue', 'Tunis'], [$first->address, $first->city]);
+        $this->assertSame(['Nouvelle rue', 'Sousse'], [$second->address, $second->city]);
+        $this->assertSame('Nouvelle rue', $second->client->adresse);
+    }
+
+    public function test_la_page_propose_le_gouvernorat_et_le_paiement_a_la_livraison(): void
+    {
+        $this->get('/checkout')
+            ->assertOk()
+            ->assertSee('name="city"', false)
+            ->assertSee('<option value="Médenine">', false)
+            ->assertSee('Paiement à la livraison');
     }
 
     /** La référence permet au front de n'envoyer Purchase qu'une seule fois. */
@@ -223,6 +284,7 @@ class CheckoutOrderTest extends TestCase
             'full_name' => 'Client',
             'phone' => '20123456',
             'address' => 'Tunis',
+            'city' => 'Tunis',
             'cart' => [],
         ])->assertStatus(422);
 
