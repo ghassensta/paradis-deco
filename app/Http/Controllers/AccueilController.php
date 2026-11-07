@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\Category;
 use App\Models\Inspiration;
 use App\Models\Product;
+use App\Models\ProductSlugRedirect;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use App\Models\Avis;
@@ -134,7 +135,7 @@ class AccueilController extends Controller
         return view('front-office.inspirations.index', compact('inspiration', 'relatedInspirations'));
     }
 
-public function ProduitShow($slug)
+public function ProduitShow(Request $request, $slug)
 {
     // Récupérer le produit avec les avis approuvés
     $product = Product::where('slug', $slug)
@@ -142,7 +143,17 @@ public function ProduitShow($slug)
         ->with(['activeVariants', 'avis' => function($query) {
             $query->where('approved', true)->latest();
         }])
-        ->firstOrFail();
+        ->first();
+
+    // Ancien slug : redirection permanente, paramètres (?variant=…) conservés.
+    if (! $product) {
+        $current = ProductSlugRedirect::where('old_slug', $slug)->first()?->product;
+        abort_unless($current?->is_active, 404);
+
+        $query = $request->getQueryString();
+
+        return redirect()->to(route('preview-article', $current->slug) . ($query ? '?' . $query : ''), 301);
+    }
 
     // Calcul des avis approuvés
     $reviews = $product->avis; // déjà préchargé avec "with"
