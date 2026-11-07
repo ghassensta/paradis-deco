@@ -172,6 +172,8 @@ public function ProduitShow(Request $request, $slug)
     $similarProducts = collect();
     if (is_array($categories) && count($categories) > 0) {
         $similarProducts = Product::where('is_active', true)
+            ->withCount(['avis as approved_reviews_count' => fn ($q) => $q->where('approved', true)])
+            ->withAvg(['avis as approved_reviews_avg' => fn ($q) => $q->where('approved', true)], 'rating')
             ->where('id', '!=', $product->id)
             ->where(function ($query) use ($categories) {
                 foreach ($categories as $categoryId) {

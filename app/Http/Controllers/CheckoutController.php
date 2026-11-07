@@ -11,11 +11,18 @@ use App\Models\Product;
 use Illuminate\Database\UniqueConstraintViolationException;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
 use Mail;
 
 class CheckoutController extends Controller
 {
+    public const GOVERNORATES = [
+        'Ariana', 'Béja', 'Ben Arous', 'Bizerte', 'Gabès', 'Gafsa', 'Jendouba', 'Kairouan',
+        'Kasserine', 'Kébili', 'Le Kef', 'Mahdia', 'La Manouba', 'Médenine', 'Monastir', 'Nabeul',
+        'Sfax', 'Sidi Bouzid', 'Siliana', 'Sousse', 'Tataouine', 'Tozeur', 'Tunis', 'Zaghouan',
+    ];
+
     /**
      * Display a listing of the resource.
      */
@@ -37,11 +44,19 @@ class CheckoutController extends Controller
     public function storeOrder(Request $request)
     {
         /* ─────────────────── 1. Validation ─────────────────── */
+        // « +216 20 123 456 », « 20.123.456 » et « 20123456 » désignent le même
+        // client : le numéro est ramené à ses 8 chiffres avant la validation.
+        if ($request->filled('phone')) {
+            $phone = preg_replace('/[\s.\-()]/', '', (string) $request->input('phone'));
+            $request->merge(['phone' => preg_replace('/^(\+|00)216/', '', $phone)]);
+        }
+
         $validated = $request->validate([
             'full_name' => 'required|string|max:100',
             'email' => 'nullable|email',
-            'phone' => 'required|string|max:30',
+            'phone' => ['required', 'regex:/^[2-9]\d{7}$/'],
             'address' => 'required|string|max:255',
+            'city' => ['required', Rule::in(self::GOVERNORATES)],
             'cart' => 'required|array|min:1',
             'cart.*.id' => 'required|integer',
             'cart.*.name' => 'required|string',
@@ -49,6 +64,15 @@ class CheckoutController extends Controller
             'cart.*.quantity' => 'required|integer|min:1',
             'cart.*.variant_id' => 'nullable|integer',
             'checkout_key' => 'nullable|string|max:64',
+        ], [
+            'full_name.required' => 'Veuillez indiquer votre nom et prénom.',
+            'email.email' => 'L\'adresse e-mail n\'est pas valide.',
+            'phone.required' => 'Veuillez indiquer votre numéro de téléphone.',
+            'phone.regex' => 'Le numéro de téléphone doit comporter 8 chiffres (ex. : 20 123 456).',
+            'address.required' => 'Veuillez indiquer votre adresse de livraison.',
+            'city.required' => 'Veuillez choisir votre gouvernorat.',
+            'city.in' => 'Veuillez choisir un gouvernorat dans la liste.',
+            'cart.required' => 'Votre panier est vide.',
         ]);
 
         /* Tentative déjà aboutie (double clic, réponse perdue, second onglet) :
@@ -66,13 +90,16 @@ class CheckoutController extends Controller
         DB::beginTransaction();
         try {
             /* 2.1 Client */
-            $client = Client::firstOrCreate(
+            // Le client garde ses coordonnées les plus récentes ; la commande,
+            // elle, conserve l'adresse saisie pour cette livraison.
+            $client = Client::updateOrCreate(
                 ['phone' => $validated['phone']],
-                [
+                array_filter([
                     'name' => $validated['full_name'],
                     'email' => $validated['email'] ?? null,
                     'adresse' => $validated['address'],
-                ]
+                    'city' => $validated['city'],
+                ])
             );
 
             /* 2.2 Montants panier */
@@ -102,6 +129,8 @@ class CheckoutController extends Controller
             $order = Order::create([
                 'numero_commande' => 'CMD-' . strtoupper(uniqid()),
                 'checkout_key' => $checkoutKey,
+                'address' => $validated['address'],
+                'city' => $validated['city'],
                 'client_id' => $client->id,
                 'statut_id' => 4,            // « en cours »
                 'subtotal_ht' => $subTotal,

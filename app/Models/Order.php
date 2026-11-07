@@ -14,6 +14,8 @@ class Order extends Model
     protected $fillable = [
         'numero_commande',
         'checkout_key',
+        'address',
+        'city',
         'client_id',
         'statut_id',
         'subtotal_ht',

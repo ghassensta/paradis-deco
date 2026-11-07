@@ -574,7 +574,7 @@ class ProfilSeeder extends Seeder
                 'site_logo' => 'logo.png',
                 'support_email' => 'support@myawesomesite.com',
                 'default_language' => 'fr',
-                'currency' => 'USD',
+                'currency' => 'TND',
                 'meta_title' => 'Welcome to My Awesome Site',
                 'meta_description' => 'This is an awesome site built with Laravel.',
                 'shipping_cost' => 5.99,

@@ -11,7 +11,7 @@
     $reviewCount = (int) ($product->approved_reviews_count ?? 0);
 @endphp
 
-<article class="group flex h-full flex-col overflow-hidden rounded-2xl border border-gray-100 bg-white transition-shadow duration-300 hover:shadow-lg">
+<article class="group relative flex h-full flex-col overflow-hidden rounded-2xl border border-gray-100 bg-white transition-shadow duration-300 hover:shadow-lg">
     <a href="{{ route('preview-article', $product->slug) }}"
        class="relative block aspect-square overflow-hidden bg-[#faf8f4]"
        title="{{ $product->name }}">
@@ -39,7 +39,8 @@
 
     <div class="flex flex-1 flex-col gap-2 p-4">
         <h3 class="line-clamp-2 text-[15px] font-medium leading-snug text-gray-900">
-            <a href="{{ route('preview-article', $product->slug) }}" class="transition-colors hover:text-[#dfb54e]">
+            {{-- Lien étiré : toute la carte mène à la fiche ; les boutons restent au-dessus (z-10). --}}
+            <a href="{{ route('preview-article', $product->slug) }}" class="transition-colors hover:text-[#dfb54e] after:absolute after:inset-0 after:content-['']">
                 {{ $product->name }}
             </a>
         </h3>
@@ -64,7 +65,7 @@
         @if ($product->has_variants)
             {{-- Le choix du type et de la taille se fait sur la fiche produit. --}}
             <a href="{{ route('preview-article', $product->slug) }}"
-               class="mt-3 block w-full rounded-lg border border-[#dfb54e] px-4 py-2.5 text-center text-sm font-medium text-[#a8842f] transition-colors duration-200 hover:bg-[#dfb54e] hover:text-white focus:outline-none focus:ring-2 focus:ring-[#dfb54e] focus:ring-offset-2">
+               class="relative z-10 mt-3 block w-full rounded-lg border border-[#dfb54e] px-4 py-2.5 text-center text-sm font-medium text-[#a8842f] transition-colors duration-200 hover:bg-[#dfb54e] hover:text-white focus:outline-none focus:ring-2 focus:ring-[#dfb54e] focus:ring-offset-2">
                 Choisir une option
             </a>
         @elseif ($product->stock > 0)
@@ -77,7 +78,7 @@
                     data-image="{{ $product->cover_url }}"
                     data-stock="{{ $product->stock }}"
                     aria-label="Ajouter {{ $product->name }} au panier"
-                    class="mt-3 w-full rounded-lg border border-[#dfb54e] px-4 py-2.5 text-sm font-medium text-[#a8842f] transition-colors duration-200 hover:bg-[#dfb54e] hover:text-white focus:outline-none focus:ring-2 focus:ring-[#dfb54e] focus:ring-offset-2">
+                    class="relative z-10 mt-3 w-full rounded-lg border border-[#dfb54e] px-4 py-2.5 text-sm font-medium text-[#a8842f] transition-colors duration-200 hover:bg-[#dfb54e] hover:text-white focus:outline-none focus:ring-2 focus:ring-[#dfb54e] focus:ring-offset-2">
                 Ajouter au panier
             </button>
         @else

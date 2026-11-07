@@ -33,10 +33,12 @@
             };
 
             // File d'évènements e-commerce, alimentée par le front.
-            window.paradisTrack = function (name, payload) {
+            // eventId : identifiant stable de l'évènement (ex. la commande), qui
+            // permet à Meta et TikTok de dédupliquer un envoi serveur ultérieur.
+            window.paradisTrack = function (name, payload, eventId) {
                 window.paradisConsent.run(function () {
-                    if (typeof fbq === 'function') { fbq('track', name, payload || {}); }
-                    if (typeof ttq === 'object' && ttq.track) { ttq.track(name, payload || {}); }
+                    if (typeof fbq === 'function') { fbq('track', name, payload || {}, eventId ? { eventID: eventId } : undefined); }
+                    if (typeof ttq === 'object' && ttq.track) { ttq.track(name, payload || {}, eventId ? { event_id: eventId } : undefined); }
                     if (typeof gtag === 'function') { gtag('event', name, payload || {}); }
                 });
             };
